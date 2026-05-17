@@ -1,122 +1,83 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Footer } from './components/Footer'
+import { Navbar } from './components/Navbar'
+import { ResultPanel } from './components/ResultPanel'
+import { UploadPanel } from './components/UploadPanel'
+import { useFileQueue } from './hooks/useFileQueue'
+import { useProcessing } from './hooks/useProcessing'
+import type { JobResult, ProcessingMode, ProcessingSettings } from './types'
 
-function App() {
-  const [count, setCount] = useState(0)
+const SESSION_ID = crypto.randomUUID()
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+const DEFAULT_SETTINGS: ProcessingSettings = {
+  quality: 85,
+  scale: 4,
+  outputFormat: 'webp',
+  keepExif: true,
 }
 
-export default App
+export default function App() {
+  const [mode, setMode] = useState<ProcessingMode>('compress')
+  const [settings, setSettings] = useState<ProcessingSettings>(DEFAULT_SETTINGS)
+  const [processing, setProcessing] = useState(false)
+  const [backendOnline, setBackendOnline] = useState(false)
+
+  const { files, addFiles, updateStatus, setResult, setError, clearAll } = useFileQueue()
+
+  const callbacks = useRef({
+    onProgress: (_id: string, _percent: number) => {},
+    onDone: (_id: string, _result: JobResult) => {},
+    onError: (_id: string, _message: string) => {},
+  })
+  callbacks.current = useMemo(() => ({
+    onProgress: (id: string, _percent: number) => updateStatus(id, 'processing'),
+    onDone: (id: string, result: JobResult) => setResult(id, result),
+    onError: (id: string, message: string) => setError(id, message),
+  }), [updateStatus, setResult, setError])
+
+  const { processQueue } = useProcessing(callbacks, SESSION_ID)
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const r = await fetch('/health')
+        setBackendOnline(r.ok)
+      } catch {
+        setBackendOnline(false)
+      }
+    }
+    check()
+    const id = setInterval(check, 10_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const handleProcess = useCallback(async () => {
+    setProcessing(true)
+    await processQueue(files, mode, settings)
+    setProcessing(false)
+  }, [files, mode, settings, processQueue])
+
+  return (
+    <div className="flex flex-col h-screen bg-[#0d1117]">
+      <Navbar mode={mode} onModeChange={setMode} backendOnline={backendOnline} />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 border-r border-[#1f2937] overflow-hidden">
+          <UploadPanel
+            files={files}
+            mode={mode}
+            settings={settings}
+            onFiles={addFiles}
+            onSettingsChange={setSettings}
+            onProcess={handleProcess}
+            onClear={clearAll}
+            processing={processing}
+          />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <ResultPanel files={files} mode={mode} />
+        </div>
+      </div>
+      <Footer files={files} sessionId={SESSION_ID} />
+    </div>
+  )
+}
