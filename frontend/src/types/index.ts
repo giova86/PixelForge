@@ -1,17 +1,24 @@
-export type ProcessingMode = 'compress' | 'enhance'
-export type OutputFormat = 'webp' | 'jpeg' | 'png'
+export type ProcessingMode = 'compress' | 'enhance' | 'resize'
+export type OutputFormat = 'original' | 'webp' | 'jpeg' | 'png'
 export type FileStatus = 'pending' | 'processing' | 'done' | 'error'
 
 export interface ProcessingSettings {
   quality: number
-  scale: 2 | 4
+  scale: 1 | 2 | 4
   outputFormat: OutputFormat
   keepExif: boolean
+}
+
+export interface ResizeSettings {
+  width: number
+  height: number
+  lockAspect: boolean
 }
 
 export interface JobResult {
   mode: ProcessingMode
   outputUrl: string
+  outputFormat?: string
   // compress
   originalSize?: number
   compressedSize?: number
@@ -19,6 +26,11 @@ export interface JobResult {
   // enhance
   scale?: number
   model?: string
+  // resize
+  originalWidth?: number
+  originalHeight?: number
+  outputWidth?: number
+  outputHeight?: number
 }
 
 export interface FileEntry {
