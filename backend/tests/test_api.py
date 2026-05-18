@@ -20,6 +20,7 @@ async def test_process_returns_job_id():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post("/process", data={
             "session_id": "test-session",
+            "batch_id": "test-batch",
             "mode": "compress",
             "quality": "80",
             "output_format": "webp",
@@ -33,11 +34,41 @@ async def test_result_endpoint_after_process():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post("/process", data={
             "session_id": "test-session-2",
+            "batch_id": "test-batch-2",
             "mode": "compress",
             "quality": "80",
             "output_format": "webp",
             "keep_exif": "false",
         }, files={"file": ("test.jpg", _jpeg_bytes(), "image/jpeg")})
+        job_id = r.json()["job_id"]
+        await asyncio.sleep(3)
+        r2 = await c.get(f"/result/{job_id}")
+    assert r2.status_code == 200
+    assert r2.headers["content-type"].startswith("image/")
+
+
+@pytest.mark.asyncio
+async def test_resize_returns_job_id():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/resize", data={
+            "session_id": "test-resize",
+            "batch_id": "test-batch-resize",
+            "width": "100",
+            "height": "80",
+        }, files={"file": ("test.jpg", _jpeg_bytes(), "image/jpeg")})
+    assert r.status_code == 200
+    assert "job_id" in r.json()
+
+
+@pytest.mark.asyncio
+async def test_resize_result_after_process():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/resize", data={
+            "session_id": "test-resize-2",
+            "batch_id": "test-batch-resize-2",
+            "width": "30",
+            "height": "20",
+        }, files={"file": ("test.jpg", _jpeg_bytes(50, 50), "image/jpeg")})
         job_id = r.json()["job_id"]
         await asyncio.sleep(3)
         r2 = await c.get(f"/result/{job_id}")

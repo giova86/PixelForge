@@ -1,4 +1,4 @@
-import asyncio, json, uuid
+import asyncio, io, json, uuid
 from pathlib import Path
 
 import aiofiles
@@ -9,6 +9,8 @@ from fastapi.responses import FileResponse, StreamingResponse
 from models.schemas import HealthResponse, JobStarted
 from services.compress import compress_image, extension, mime_type
 from services.enhance import enhance_image, get_model_name
+from PIL import Image
+from services.resize import resize_image
 
 router = APIRouter()
 
@@ -23,7 +25,7 @@ def _sse(event: str, data: dict) -> str:
 
 
 async def _run_compress(job_id: str, input_path: Path, quality: int,
-                        output_format: str, keep_exif: bool, session_id: str) -> None:
+                        output_format: str, keep_exif: bool, session_id: str, batch_id: str) -> None:
     job_dir = JOBS_DIR / job_id
     try:
         _jobs[job_id]["status"] = "processing"
@@ -42,24 +44,28 @@ async def _run_compress(job_id: str, input_path: Path, quality: int,
         async with aiofiles.open(out_path, "wb") as f:
             await f.write(result)
 
+        original_stem = _jobs[job_id].get("original_stem", "image")
         _jobs[job_id] = {
             "status": "done",
             "output": out_path,
             "mime": mime_type(output_format),
             "session_id": session_id,
+            "batch_id": batch_id,
+            "original_stem": original_stem,
             "meta": {
                 "mode": "compress",
+                "output_format": output_format,
                 "original_size": original_size,
                 "compressed_size": compressed_size,
                 "saving_percent": saving_percent,
             },
         }
     except Exception as exc:
-        _jobs[job_id] = {"status": "error", "message": str(exc), "session_id": session_id}
+        _jobs[job_id] = {"status": "error", "message": str(exc), "session_id": session_id, "batch_id": batch_id}
 
 
 async def _run_enhance(job_id: str, input_path: Path, scale: int,
-                       output_format: str, session_id: str) -> None:
+                       output_format: str, session_id: str, batch_id: str) -> None:
     job_dir = JOBS_DIR / job_id
     try:
         _jobs[job_id]["status"] = "processing"
@@ -75,47 +81,137 @@ async def _run_enhance(job_id: str, input_path: Path, scale: int,
         async with aiofiles.open(out_path, "wb") as f:
             await f.write(result)
 
+        original_stem = _jobs[job_id].get("original_stem", "image")
         _jobs[job_id] = {
             "status": "done",
             "output": out_path,
             "mime": mime_type(output_format),
             "session_id": session_id,
+            "batch_id": batch_id,
+            "original_stem": original_stem,
             "meta": {
                 "mode": "enhance",
+                "output_format": output_format,
                 "scale": scale,
                 "model": get_model_name(scale),
             },
         }
     except Exception as exc:
-        _jobs[job_id] = {"status": "error", "message": str(exc), "session_id": session_id}
+        _jobs[job_id] = {"status": "error", "message": str(exc), "session_id": session_id, "batch_id": batch_id}
+
+
+async def _run_resize(job_id: str, input_path: Path, width: int, height: int,
+                      output_format: str, session_id: str, batch_id: str) -> None:
+    job_dir = JOBS_DIR / job_id
+    try:
+        _jobs[job_id]["status"] = "processing"
+        async with aiofiles.open(input_path, "rb") as f:
+            data = await f.read()
+
+        img_info = Image.open(io.BytesIO(data))
+        original_width, original_height = img_info.size
+        img_info.close()
+
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, resize_image, data, width, height, output_format
+        )
+
+        out_path = job_dir / f"output{extension(output_format)}"
+        async with aiofiles.open(out_path, "wb") as f:
+            await f.write(result)
+
+        original_stem = _jobs[job_id].get("original_stem", "image")
+        _jobs[job_id] = {
+            "status": "done",
+            "output": out_path,
+            "mime": mime_type(output_format),
+            "session_id": session_id,
+            "batch_id": batch_id,
+            "original_stem": original_stem,
+            "meta": {
+                "mode": "resize",
+                "output_format": output_format,
+                "original_width": original_width,
+                "original_height": original_height,
+                "output_width": width,
+                "output_height": height,
+            },
+        }
+    except Exception as exc:
+        _jobs[job_id] = {"status": "error", "message": str(exc), "session_id": session_id, "batch_id": batch_id}
+
+
+_EXT_TO_FORMAT = {
+    ".jpg": "jpeg", ".jpeg": "jpeg",
+    ".png": "png",
+    ".webp": "webp",
+    ".tiff": "png", ".tif": "png",
+    ".bmp": "png",
+    ".heic": "jpeg",
+}
 
 
 @router.post("/process", response_model=JobStarted)
 async def start_process(
     file: UploadFile = File(...),
     session_id: str = Form(...),
+    batch_id: str = Form(...),
     mode: str = Form(...),
     quality: int = Form(85),
     scale: int = Form(4),
-    output_format: str = Form("webp"),
+    output_format: str = Form("original"),
     keep_exif: bool = Form(True),
 ):
     job_id = str(uuid.uuid4())
     job_dir = JOBS_DIR / job_id
     job_dir.mkdir(parents=True)
 
-    suffix = Path(file.filename or "upload.jpg").suffix or ".jpg"
+    original_path = Path(file.filename or "upload.jpg")
+    suffix = original_path.suffix.lower() or ".jpg"
+    original_stem = original_path.stem or "image"
     input_path = job_dir / f"input{suffix}"
     contents = await file.read()
     async with aiofiles.open(input_path, "wb") as f:
         await f.write(contents)
 
-    _jobs[job_id] = {"status": "pending", "session_id": session_id}
+    if output_format == "original":
+        output_format = _EXT_TO_FORMAT.get(suffix, "jpeg")
+
+    _jobs[job_id] = {"status": "pending", "session_id": session_id, "batch_id": batch_id, "original_stem": original_stem}
 
     if mode == "compress":
-        asyncio.create_task(_run_compress(job_id, input_path, quality, output_format, keep_exif, session_id))
+        asyncio.create_task(_run_compress(job_id, input_path, quality, output_format, keep_exif, session_id, batch_id))
     else:
-        asyncio.create_task(_run_enhance(job_id, input_path, scale, output_format, session_id))
+        asyncio.create_task(_run_enhance(job_id, input_path, scale, output_format, session_id, batch_id))
+
+    return JobStarted(job_id=job_id)
+
+
+@router.post("/resize", response_model=JobStarted)
+async def start_resize(
+    file: UploadFile = File(...),
+    session_id: str = Form(...),
+    batch_id: str = Form(...),
+    width: int = Form(...),
+    height: int = Form(...),
+):
+    job_id = str(uuid.uuid4())
+    job_dir = JOBS_DIR / job_id
+    job_dir.mkdir(parents=True)
+
+    original_path = Path(file.filename or "upload.jpg")
+    suffix = original_path.suffix.lower() or ".jpg"
+    original_stem = original_path.stem or "image"
+    input_path = job_dir / f"input{suffix}"
+    contents = await file.read()
+    async with aiofiles.open(input_path, "wb") as f:
+        await f.write(contents)
+
+    output_format = _EXT_TO_FORMAT.get(suffix, "jpeg")
+
+    _jobs[job_id] = {"status": "pending", "session_id": session_id, "batch_id": batch_id, "original_stem": original_stem}
+    asyncio.create_task(_run_resize(job_id, input_path, width, height, output_format, session_id, batch_id))
 
     return JobStarted(job_id=job_id)
 
@@ -154,7 +250,13 @@ async def get_result(job_id: str):
     job = _jobs.get(job_id)
     if not job or job["status"] != "done":
         raise HTTPException(status_code=404, detail="Result not ready")
-    return FileResponse(job["output"], media_type=job["mime"])
+    output_path: Path = job["output"]
+    return FileResponse(
+        output_path,
+        media_type=job["mime"],
+        filename=output_path.name,
+        content_disposition_type="attachment",
+    )
 
 
 @router.get("/health", response_model=HealthResponse)
