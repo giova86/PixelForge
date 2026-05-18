@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FileEntry, ProcessingMode } from '../types'
 import { CompressResult } from './CompressResult'
 import { EnhanceResult } from './EnhanceResult'
+import { ResizeResult } from './ResizeResult'
 import { ResultTabs } from './ResultTabs'
 
 interface ResultPanelProps {
@@ -28,7 +29,7 @@ export function ResultPanel({ files, mode }: ResultPanelProps) {
         <ResultTabs files={files} activeId={activeId} onSelect={setActiveId} />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-hidden p-4 flex flex-col">
         {!activeEntry && (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-[#4b5563]">
             <span className="text-4xl opacity-30">✦</span>
@@ -37,6 +38,7 @@ export function ResultPanel({ files, mode }: ResultPanelProps) {
         )}
         {activeEntry && mode === 'compress' && <CompressResult entry={activeEntry} />}
         {activeEntry && mode === 'enhance' && <EnhanceResult entry={activeEntry} />}
+        {activeEntry && mode === 'resize' && <ResizeResult entry={activeEntry} />}
       </div>
     </div>
   )
