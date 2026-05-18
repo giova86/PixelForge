@@ -182,8 +182,10 @@ async def start_process(
 
     if mode == "compress":
         asyncio.create_task(_run_compress(job_id, input_path, quality, output_format, keep_exif, session_id, batch_id))
-    else:
+    elif mode == "enhance":
         asyncio.create_task(_run_enhance(job_id, input_path, scale, output_format, session_id, batch_id))
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown mode: {mode}")
 
     return JobStarted(job_id=job_id)
 
@@ -193,8 +195,8 @@ async def start_resize(
     file: UploadFile = File(...),
     session_id: str = Form(...),
     batch_id: str = Form(...),
-    width: int = Form(...),
-    height: int = Form(...),
+    width: int = Form(..., ge=1, le=16384),
+    height: int = Form(..., ge=1, le=16384),
 ):
     job_id = str(uuid.uuid4())
     job_dir = JOBS_DIR / job_id

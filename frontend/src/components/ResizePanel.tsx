@@ -33,8 +33,9 @@ export function ResizePanel({
   }, [originalDims, onResizeSettingsChange])
 
   const handleWidthChange = (newW: number) => {
-    if (resizeSettings.lockAspect && originalDims && originalDims.w > 0) {
-      const newH = Math.max(1, Math.round(newW * originalDims.h / originalDims.w))
+    if (resizeSettings.lockAspect && resizeSettings.width > 0) {
+      const ratio = resizeSettings.height / resizeSettings.width
+      const newH = Math.max(1, Math.round(newW * ratio))
       onResizeSettingsChange({ ...resizeSettings, width: newW, height: newH })
     } else {
       onResizeSettingsChange({ ...resizeSettings, width: newW })
@@ -42,8 +43,9 @@ export function ResizePanel({
   }
 
   const handleHeightChange = (newH: number) => {
-    if (resizeSettings.lockAspect && originalDims && originalDims.h > 0) {
-      const newW = Math.max(1, Math.round(newH * originalDims.w / originalDims.h))
+    if (resizeSettings.lockAspect && resizeSettings.height > 0) {
+      const ratio = resizeSettings.width / resizeSettings.height
+      const newW = Math.max(1, Math.round(newH * ratio))
       onResizeSettingsChange({ ...resizeSettings, width: newW, height: newH })
     } else {
       onResizeSettingsChange({ ...resizeSettings, height: newH })

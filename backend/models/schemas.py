@@ -3,9 +3,9 @@ from pydantic import BaseModel, Field
 
 class ProcessRequest(BaseModel):
     session_id: str
-    mode: Literal["compress", "enhance"]
+    mode: Literal["compress", "enhance", "resize"]
     quality: int = Field(85, ge=1, le=100)
-    scale: Literal[2, 4] = 4
+    scale: Literal[1, 2, 4] = 4
     output_format: Literal["webp", "jpeg", "png"] = "webp"
     keep_exif: bool = True
 
@@ -18,12 +18,20 @@ class ProgressEvent(BaseModel):
 
 class DoneEvent(BaseModel):
     output_url: str
-    mode: Literal["compress", "enhance"]
+    mode: Literal["compress", "enhance", "resize"]
+    # compress
     original_size: Optional[int] = None
     compressed_size: Optional[int] = None
     saving_percent: Optional[float] = None
+    # enhance
     scale: Optional[int] = None
     model: Optional[str] = None
+    # resize
+    original_width: Optional[int] = None
+    original_height: Optional[int] = None
+    output_width: Optional[int] = None
+    output_height: Optional[int] = None
+    output_format: Optional[str] = None
 
 class ErrorEvent(BaseModel):
     message: str
