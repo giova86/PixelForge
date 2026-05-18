@@ -6,6 +6,12 @@ interface NavbarProps {
   backendOnline: boolean
 }
 
+const MODE_LABELS: Record<ProcessingMode, string> = {
+  compress: 'Comprimi',
+  enhance: 'Migliora qualità',
+  resize: 'Ridimensiona',
+}
+
 export function Navbar({ mode, onModeChange, backendOnline }: NavbarProps) {
   return (
     <nav className="flex items-center justify-between px-6 h-14 bg-[#111827] border-b border-[#1f2937] flex-shrink-0">
@@ -21,7 +27,7 @@ export function Navbar({ mode, onModeChange, backendOnline }: NavbarProps) {
       </div>
 
       <div className="flex bg-[#1f2937] border border-[#374151] rounded-xl p-1 gap-1">
-        {(['compress', 'enhance'] as ProcessingMode[]).map(m => (
+        {(['compress', 'enhance', 'resize'] as ProcessingMode[]).map(m => (
           <button
             key={m}
             onClick={() => onModeChange(m)}
@@ -32,7 +38,7 @@ export function Navbar({ mode, onModeChange, backendOnline }: NavbarProps) {
             }`}
             style={mode === m ? { background: 'linear-gradient(135deg, #f59e0b, #ef4444)' } : {}}
           >
-            {m === 'compress' ? 'Comprimi' : 'Migliora qualità'}
+            {MODE_LABELS[m]}
           </button>
         ))}
       </div>
