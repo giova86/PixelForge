@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Footer } from './components/Footer'
 import { Navbar } from './components/Navbar'
 import { ResultPanel } from './components/ResultPanel'
@@ -34,22 +34,22 @@ export default function App() {
     onDone: (_id: string, _result: JobResult) => {},
     onError: (_id: string, _message: string) => {},
   })
-  compressCallbacks.current = useMemo(() => ({
+  compressCallbacks.current = {
     onProgress: (id: string, _percent: number) => compressQueue.updateStatus(id, 'processing'),
     onDone: (id: string, result: JobResult) => compressQueue.setResult(id, result),
     onError: (id: string, message: string) => compressQueue.setError(id, message),
-  }), [compressQueue.updateStatus, compressQueue.setResult, compressQueue.setError])
+  }
 
   const enhanceCallbacks = useRef({
     onProgress: (_id: string, _percent: number) => {},
     onDone: (_id: string, _result: JobResult) => {},
     onError: (_id: string, _message: string) => {},
   })
-  enhanceCallbacks.current = useMemo(() => ({
+  enhanceCallbacks.current = {
     onProgress: (id: string, _percent: number) => enhanceQueue.updateStatus(id, 'processing'),
     onDone: (id: string, result: JobResult) => enhanceQueue.setResult(id, result),
     onError: (id: string, message: string) => enhanceQueue.setError(id, message),
-  }), [enhanceQueue.updateStatus, enhanceQueue.setResult, enhanceQueue.setError])
+  }
 
   const { processQueue: compressProcessQueue } = useProcessing(compressCallbacks, SESSION_ID, compressBatchId)
   const { processQueue: enhanceProcessQueue } = useProcessing(enhanceCallbacks, SESSION_ID, enhanceBatchId)
@@ -87,7 +87,7 @@ export default function App() {
       await enhanceProcessQueue(toProcess, mode, settings, newBatchId)
       setEnhanceProcessing(false)
     }
-  }, [mode, settings, compressQueue, enhanceQueue, compressProcessQueue, enhanceProcessQueue])
+  }, [mode, settings, compressQueue.resetAll, enhanceQueue.resetAll, compressProcessQueue, enhanceProcessQueue])
 
   return (
     <div className="flex flex-col h-screen bg-[#0d1117]">
