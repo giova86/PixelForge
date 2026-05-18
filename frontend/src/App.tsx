@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Footer } from './components/Footer'
 import { Navbar } from './components/Navbar'
+import { ResizePanel } from './components/ResizePanel'
 import { ResultPanel } from './components/ResultPanel'
 import { UploadPanel } from './components/UploadPanel'
 import { useFileQueue } from './hooks/useFileQueue'
 import { useProcessing } from './hooks/useProcessing'
-import type { JobResult, ProcessingMode, ProcessingSettings } from './types'
+import { useResizeProcessing } from './hooks/useResizeProcessing'
+import type { JobResult, ProcessingMode, ProcessingSettings, ResizeSettings } from './types'
 
 const SESSION_ID = crypto.randomUUID()
 
@@ -16,18 +18,28 @@ const DEFAULT_SETTINGS: ProcessingSettings = {
   keepExif: true,
 }
 
+const DEFAULT_RESIZE_SETTINGS: ResizeSettings = {
+  width: 800,
+  height: 600,
+  lockAspect: true,
+}
+
 export default function App() {
   const [mode, setMode] = useState<ProcessingMode>('compress')
   const [settings, setSettings] = useState<ProcessingSettings>(DEFAULT_SETTINGS)
+  const [resizeSettings, setResizeSettings] = useState<ResizeSettings>(DEFAULT_RESIZE_SETTINGS)
   const [backendOnline, setBackendOnline] = useState(false)
 
   const compressQueue = useFileQueue()
   const enhanceQueue = useFileQueue()
+  const resizeQueue = useFileQueue()
 
   const [compressBatchId, setCompressBatchId] = useState(() => crypto.randomUUID())
   const [enhanceBatchId, setEnhanceBatchId] = useState(() => crypto.randomUUID())
+  const [resizeBatchId, setResizeBatchId] = useState(() => crypto.randomUUID())
   const [compressProcessing, setCompressProcessing] = useState(false)
   const [enhanceProcessing, setEnhanceProcessing] = useState(false)
+  const [resizeProcessing, setResizeProcessing] = useState(false)
 
   const compressCallbacks = useRef({
     onProgress: (_id: string, _percent: number) => {},
@@ -51,12 +63,24 @@ export default function App() {
     onError: (id: string, message: string) => enhanceQueue.setError(id, message),
   }
 
+  const resizeCallbacks = useRef({
+    onProgress: (_id: string, _percent: number) => {},
+    onDone: (_id: string, _result: JobResult) => {},
+    onError: (_id: string, _message: string) => {},
+  })
+  resizeCallbacks.current = {
+    onProgress: (id: string, _percent: number) => resizeQueue.updateStatus(id, 'processing'),
+    onDone: (id: string, result: JobResult) => resizeQueue.setResult(id, result),
+    onError: (id: string, message: string) => resizeQueue.setError(id, message),
+  }
+
   const { processQueue: compressProcessQueue } = useProcessing(compressCallbacks, SESSION_ID, compressBatchId)
   const { processQueue: enhanceProcessQueue } = useProcessing(enhanceCallbacks, SESSION_ID, enhanceBatchId)
+  const { processResize } = useResizeProcessing(resizeCallbacks, SESSION_ID)
 
-  const activeQueue = mode === 'compress' ? compressQueue : enhanceQueue
-  const activeBatchId = mode === 'compress' ? compressBatchId : enhanceBatchId
-  const activeProcessing = mode === 'compress' ? compressProcessing : enhanceProcessing
+  const activeQueue = mode === 'compress' ? compressQueue : mode === 'enhance' ? enhanceQueue : resizeQueue
+  const activeBatchId = mode === 'compress' ? compressBatchId : mode === 'enhance' ? enhanceBatchId : resizeBatchId
+  const activeProcessing = mode === 'compress' ? compressProcessing : mode === 'enhance' ? enhanceProcessing : resizeProcessing
 
   useEffect(() => {
     const check = async () => {
@@ -72,6 +96,11 @@ export default function App() {
     return () => clearInterval(id)
   }, [])
 
+  const handleResizeFile = useCallback((incoming: File[]) => {
+    resizeQueue.clearAll()
+    resizeQueue.addFiles(incoming.slice(0, 1))
+  }, [resizeQueue.clearAll, resizeQueue.addFiles])
+
   const handleProcess = useCallback(async () => {
     const newBatchId = crypto.randomUUID()
     if (mode === 'compress') {
@@ -80,31 +109,49 @@ export default function App() {
       const toProcess = compressQueue.resetAll()
       await compressProcessQueue(toProcess, mode, settings, newBatchId)
       setCompressProcessing(false)
-    } else {
+    } else if (mode === 'enhance') {
       setEnhanceBatchId(newBatchId)
       setEnhanceProcessing(true)
       const toProcess = enhanceQueue.resetAll()
       await enhanceProcessQueue(toProcess, mode, settings, newBatchId)
       setEnhanceProcessing(false)
+    } else {
+      setResizeBatchId(newBatchId)
+      setResizeProcessing(true)
+      const toProcess = resizeQueue.resetAll()
+      await processResize(toProcess, resizeSettings.width, resizeSettings.height, newBatchId)
+      setResizeProcessing(false)
     }
-  }, [mode, settings, compressQueue.resetAll, enhanceQueue.resetAll, compressProcessQueue, enhanceProcessQueue])
+  }, [mode, settings, resizeSettings, compressQueue.resetAll, enhanceQueue.resetAll, resizeQueue.resetAll, compressProcessQueue, enhanceProcessQueue, processResize])
 
   return (
     <div className="flex flex-col h-screen bg-[#0d1117]">
       <Navbar mode={mode} onModeChange={setMode} backendOnline={backendOnline} />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 border-r border-[#1f2937] overflow-hidden">
-          <UploadPanel
-            files={activeQueue.files}
-            mode={mode}
-            settings={settings}
-            onFiles={activeQueue.addFiles}
-            onSettingsChange={setSettings}
-            onProcess={handleProcess}
-            onClear={activeQueue.clearAll}
-            onRemove={activeQueue.removeFile}
-            processing={activeProcessing}
-          />
+          {mode === 'resize' ? (
+            <ResizePanel
+              files={resizeQueue.files}
+              resizeSettings={resizeSettings}
+              onFiles={handleResizeFile}
+              onResizeSettingsChange={setResizeSettings}
+              onProcess={handleProcess}
+              onClear={resizeQueue.clearAll}
+              processing={resizeProcessing}
+            />
+          ) : (
+            <UploadPanel
+              files={activeQueue.files}
+              mode={mode}
+              settings={settings}
+              onFiles={activeQueue.addFiles}
+              onSettingsChange={setSettings}
+              onProcess={handleProcess}
+              onClear={activeQueue.clearAll}
+              onRemove={activeQueue.removeFile}
+              processing={activeProcessing}
+            />
+          )}
         </div>
         <div className="flex-1 overflow-hidden">
           <ResultPanel files={activeQueue.files} mode={mode} />
