@@ -120,6 +120,9 @@ async def _run_resize(
             width = max(1, round(original_width * scale_factor))
             height = max(1, round(original_height * scale_factor))
 
+        if width is None or height is None:
+            raise ValueError("width and height must be resolved before calling resize_image")
+
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None, resize_image, data, width, height, output_format

@@ -89,6 +89,23 @@ async def test_resize_with_scale_factor_returns_job_id():
 
 
 @pytest.mark.asyncio
+async def test_resize_scale_factor_output_dimensions():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/resize", data={
+            "session_id": "test-scale-dim-session",
+            "batch_id": "test-scale-dim-batch",
+            "scale_factor": "0.5",
+        }, files={"file": ("test.jpg", _jpeg_bytes(200, 100), "image/jpeg")})
+        assert r.status_code == 200
+        job_id = r.json()["job_id"]
+        await asyncio.sleep(3)
+        r2 = await c.get(f"/result/{job_id}")
+    assert r2.status_code == 200
+    img = Image.open(io.BytesIO(r2.content))
+    assert img.size == (100, 50)
+
+
+@pytest.mark.asyncio
 async def test_resize_without_params_returns_422():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post("/resize", data={
