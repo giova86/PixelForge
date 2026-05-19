@@ -16,7 +16,7 @@ export interface ResizeSettings {
   width: number
   height: number
   lockAspect: boolean
-  scaleFactor: 0.5 | 0.333 | 0.25
+  scaleFactor: number
 }
 
 export interface JobResult {

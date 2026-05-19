@@ -137,7 +137,7 @@ export function ResizePanel({
           {firstFile && (
             <div className="bg-[#1f2937] border border-[#374151] rounded-xl p-4 flex flex-col gap-4">
               {/* Reference dims (only in dimensions mode when loaded) */}
-              {originalDims && (
+              {resizeSettings.mode === 'dimensions' && originalDims && (
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-[#6b7280]">
                     Reference:{' '}
@@ -224,7 +224,7 @@ export function ResizePanel({
                 <div className="flex gap-2">
                   {([
                     { factor: 0.5 as const, label: '1/2' },
-                    { factor: 0.333 as const, label: '1/3' },
+                    { factor: 1/3, label: '1/3' },
                     { factor: 0.25 as const, label: '1/4' },
                   ]).map(({ factor, label }) => (
                     <button
