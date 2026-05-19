@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { FileEntry, JobResult } from '../types'
+import type { FileEntry, JobResult, ResizeSettings } from '../types'
 
 interface ProcessingCallbacks {
   onProgress: (id: string, percent: number) => void
@@ -13,8 +13,7 @@ export function useResizeProcessing(
 ) {
   const processResize = useCallback(async (
     entries: FileEntry[],
-    width: number,
-    height: number,
+    settings: ResizeSettings,
     batchId: string,
   ) => {
     for (const entry of entries) {
@@ -23,8 +22,12 @@ export function useResizeProcessing(
         form.append('file', entry.file)
         form.append('session_id', sessionId)
         form.append('batch_id', batchId)
-        form.append('width', String(width))
-        form.append('height', String(height))
+        if (settings.mode === 'scale') {
+          form.append('scale_factor', String(settings.scaleFactor))
+        } else {
+          form.append('width', String(settings.width))
+          form.append('height', String(settings.height))
+        }
 
         let jobId: string
         try {
