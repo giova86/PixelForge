@@ -114,22 +114,31 @@ export default function App() {
       setCompressBatchId(newBatchId)
       setCompressProcessing(true)
       const toProcess = compressQueue.resetAll()
-      await compressProcessQueue(toProcess, mode, settings, newBatchId)
-      setSettingsDirty(false)
-      setCompressProcessing(false)
+      try {
+        await compressProcessQueue(toProcess, mode, settings, newBatchId)
+      } finally {
+        setSettingsDirty(false)
+        setCompressProcessing(false)
+      }
     } else if (mode === 'enhance') {
       setEnhanceBatchId(newBatchId)
       setEnhanceProcessing(true)
       const toProcess = enhanceQueue.resetAll()
-      await enhanceProcessQueue(toProcess, mode, settings, newBatchId)
-      setSettingsDirty(false)
-      setEnhanceProcessing(false)
+      try {
+        await enhanceProcessQueue(toProcess, mode, settings, newBatchId)
+      } finally {
+        setSettingsDirty(false)
+        setEnhanceProcessing(false)
+      }
     } else {
       setResizeBatchId(newBatchId)
       setResizeProcessing(true)
       const toProcess = resizeQueue.resetAll()
-      await processResize(toProcess, resizeSettings, newBatchId)
-      setResizeProcessing(false)
+      try {
+        await processResize(toProcess, resizeSettings, newBatchId)
+      } finally {
+        setResizeProcessing(false)
+      }
     }
   }, [mode, settings, resizeSettings, compressQueue.resetAll, enhanceQueue.resetAll, resizeQueue.resetAll, compressProcessQueue, enhanceProcessQueue, processResize])
 
