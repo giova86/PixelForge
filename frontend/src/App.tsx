@@ -29,8 +29,14 @@ const DEFAULT_RESIZE_SETTINGS: ResizeSettings = {
 export default function App() {
   const [mode, setMode] = useState<ProcessingMode>('compress')
   const [settings, setSettings] = useState<ProcessingSettings>(DEFAULT_SETTINGS)
+  const [settingsDirty, setSettingsDirty] = useState(false)
   const [resizeSettings, setResizeSettings] = useState<ResizeSettings>(DEFAULT_RESIZE_SETTINGS)
   const [backendOnline, setBackendOnline] = useState(false)
+
+  const handleSettingsChange = useCallback((s: ProcessingSettings) => {
+    setSettings(s)
+    setSettingsDirty(true)
+  }, [])
 
   const compressQueue = useFileQueue()
   const enhanceQueue = useFileQueue()
@@ -109,12 +115,14 @@ export default function App() {
       setCompressProcessing(true)
       const toProcess = compressQueue.resetAll()
       await compressProcessQueue(toProcess, mode, settings, newBatchId)
+      setSettingsDirty(false)
       setCompressProcessing(false)
     } else if (mode === 'enhance') {
       setEnhanceBatchId(newBatchId)
       setEnhanceProcessing(true)
       const toProcess = enhanceQueue.resetAll()
       await enhanceProcessQueue(toProcess, mode, settings, newBatchId)
+      setSettingsDirty(false)
       setEnhanceProcessing(false)
     } else {
       setResizeBatchId(newBatchId)
@@ -147,11 +155,12 @@ export default function App() {
               mode={mode}
               settings={settings}
               onFiles={activeQueue.addFiles}
-              onSettingsChange={setSettings}
+              onSettingsChange={handleSettingsChange}
               onProcess={handleProcess}
               onClear={activeQueue.clearAll}
               onRemove={activeQueue.removeFile}
               processing={activeProcessing}
+              settingsDirty={settingsDirty}
             />
           )}
         </div>
