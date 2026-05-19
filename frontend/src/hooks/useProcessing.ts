@@ -10,17 +10,20 @@ interface ProcessingCallbacks {
 export function useProcessing(
   callbacks: React.MutableRefObject<ProcessingCallbacks>,
   sessionId: string,
+  currentBatchId: string,
 ) {
   const processQueue = useCallback(async (
     entries: FileEntry[],
     mode: 'compress' | 'enhance',
     settings: ProcessingSettings,
+    batchId: string,
   ) => {
-    for (const entry of entries.filter(e => e.status === 'pending')) {
+    for (const entry of entries) {
       await new Promise<void>(async (resolve) => {
         const form = new FormData()
         form.append('file', entry.file)
         form.append('session_id', sessionId)
+        form.append('batch_id', batchId)
         form.append('mode', mode)
         form.append('quality', String(settings.quality))
         form.append('scale', String(settings.scale))
@@ -52,6 +55,7 @@ export function useProcessing(
           const result: JobResult = {
             mode,
             outputUrl: data.output_url,
+            outputFormat: data.output_format,
             originalSize: data.original_size,
             compressedSize: data.compressed_size,
             savingPercent: data.saving_percent,

@@ -147,6 +147,7 @@ async def _run_resize(
                 "original_height": original_height,
                 "output_width": width,
                 "output_height": height,
+                "output_size": len(result),
             },
         }
     except Exception as exc:
@@ -240,7 +241,7 @@ async def start_resize(
 async def stream_job(job_id: str):
     async def event_generator():
         yield _sse("progress", {"step": "queued", "percent": 5})
-        for _ in range(120):
+        for _ in range(600):
             await asyncio.sleep(1)
             job = _jobs.get(job_id)
             if job is None:

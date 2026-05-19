@@ -14,8 +14,8 @@ export function CompressResult({ entry }: CompressResultProps) {
   const { originalSize = 0, compressedSize = 0, savingPercent = 0, outputUrl } = result
 
   return (
-    <div className="bg-[#1f2937] border border-[#374151] rounded-xl overflow-hidden">
-      <div className="relative h-52 overflow-hidden">
+    <div className="bg-[#1f2937] border border-[#374151] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+      <div className="relative flex-1 overflow-hidden min-h-0">
         <img
           src={`${outputUrl}?t=${Date.now()}`}
           alt="Compressed"
@@ -23,22 +23,22 @@ export function CompressResult({ entry }: CompressResultProps) {
           onError={e => { (e.target as HTMLImageElement).src = previewUrl }}
         />
         <span className="absolute bottom-2 right-2 text-xs bg-black/60 rounded px-2 py-0.5 text-[#e5e7eb]">
-          Anteprima compressa
+          Compressed preview
         </span>
       </div>
       <div className="p-4 grid grid-cols-3 gap-3">
         <div className="bg-[#111827] rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-[#f59e0b]">{formatBytes(originalSize)}</p>
-          <p className="text-xs text-[#6b7280] mt-0.5">Originale</p>
+          <p className="text-xs text-[#6b7280] mt-0.5">Original</p>
         </div>
         <div className="bg-[#111827] rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-[#34d399]">{formatBytes(compressedSize)}</p>
-          <p className="text-xs text-[#6b7280] mt-0.5">Compresso</p>
+          <p className="text-xs text-[#6b7280] mt-0.5">Compressed</p>
         </div>
         <div className="bg-[#111827] rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-[#34d399]">−{savingPercent}%</p>
-          <p className="text-xs text-[#6b7280] mt-0.5">Riduzione</p>
-          <p className="text-xs text-[#4b5563]">{formatBytes(originalSize - compressedSize)} risparmiati</p>
+          <p className="text-xs text-[#6b7280] mt-0.5">Reduction</p>
+          <p className="text-xs text-[#4b5563]">{formatBytes(originalSize - compressedSize)} saved</p>
         </div>
       </div>
     </div>

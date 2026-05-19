@@ -13,7 +13,7 @@ export function SettingsBox({ mode, settings, onChange }: SettingsBoxProps) {
     <div className="bg-[#1f2937] border border-[#374151] rounded-xl p-4 flex flex-col gap-3">
       {mode === 'compress' && (
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-[#9ca3af]">Qualità output</span>
+          <span className="text-sm text-[#9ca3af]">Output quality</span>
           <div className="flex items-center gap-2.5">
             <input
               type="range" min={1} max={100} value={settings.quality}
@@ -27,9 +27,9 @@ export function SettingsBox({ mode, settings, onChange }: SettingsBoxProps) {
 
       {mode === 'enhance' && (
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-[#9ca3af]">Scala upscaling</span>
+          <span className="text-sm text-[#9ca3af]">Upscaling scale</span>
           <div className="flex gap-1.5">
-            {([2, 4] as const).map(s => (
+            {([1, 2, 4] as const).map(s => (
               <button
                 key={s}
                 onClick={() => update({ scale: s })}
@@ -38,19 +38,20 @@ export function SettingsBox({ mode, settings, onChange }: SettingsBoxProps) {
                     ? 'border-[#f59e0b] bg-[#f59e0b]/15 text-[#f59e0b]'
                     : 'border-[#374151] bg-transparent text-[#9ca3af]'
                 }`}
-              >{s}×</button>
+              >{s === 1 ? '1× (enhance)' : `${s}×`}</button>
             ))}
           </div>
         </div>
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-[#9ca3af]">Formato output</span>
+        <span className="text-sm text-[#9ca3af]">Output format</span>
         <select
           value={settings.outputFormat}
           onChange={e => update({ outputFormat: e.target.value as ProcessingSettings['outputFormat'] })}
           className="bg-[#111827] border border-[#374151] rounded-md px-2 py-1 text-sm text-[#f59e0b] font-semibold"
         >
+          <option value="original">Original</option>
           <option value="webp">WebP</option>
           <option value="jpeg">JPEG</option>
           <option value="png">PNG</option>
@@ -58,7 +59,7 @@ export function SettingsBox({ mode, settings, onChange }: SettingsBoxProps) {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-[#9ca3af]">Mantieni metadati EXIF</span>
+        <span className="text-sm text-[#9ca3af]">Keep EXIF metadata</span>
         <button
           onClick={() => update({ keepExif: !settings.keepExif })}
           className={`w-9 h-5 rounded-full transition-all relative ${settings.keepExif ? '' : 'bg-[#374151]'}`}

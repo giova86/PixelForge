@@ -12,10 +12,11 @@ interface ResizePanelProps {
   onClear: () => void
   onRemove: (id: string) => void
   processing: boolean
+  isAdding?: boolean
 }
 
 export function ResizePanel({
-  files, resizeSettings, onFiles, onResizeSettingsChange, onProcess, onClear, onRemove, processing,
+  files, resizeSettings, onFiles, onResizeSettingsChange, onProcess, onClear, onRemove, processing, isAdding = false,
 }: ResizePanelProps) {
   const firstFile = files[0] ?? null
   const [originalDims, setOriginalDims] = useState<{ w: number; h: number } | null>(null)
@@ -105,7 +106,7 @@ export function ResizePanel({
       {files.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="w-2/5">
-            <DropZone onFiles={onFiles} />
+            <DropZone onFiles={onFiles} isAdding={isAdding} />
           </div>
           <input
             id="file-input-resize"
@@ -118,7 +119,7 @@ export function ResizePanel({
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-          <DropZone onFiles={onFiles} />
+          <DropZone onFiles={onFiles} isAdding={isAdding} />
           <input
             id="file-input-resize"
             type="file"

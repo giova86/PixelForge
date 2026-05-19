@@ -59,6 +59,7 @@ export function useResizeProcessing(
             originalHeight: data.original_height,
             outputWidth: data.output_width,
             outputHeight: data.output_height,
+            outputSize: data.output_size,
           }
           callbacks.current.onDone(entry.id, result)
           resolve()

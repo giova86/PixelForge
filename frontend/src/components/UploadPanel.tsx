@@ -14,9 +14,10 @@ interface UploadPanelProps {
   onRemove: (id: string) => void
   processing: boolean
   settingsDirty: boolean
+  isAdding?: boolean
 }
 
-export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, onProcess, onClear, onRemove, processing, settingsDirty }: UploadPanelProps) {
+export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, onProcess, onClear, onRemove, processing, settingsDirty, isAdding = false }: UploadPanelProps) {
   const hasFiles = files.length > 0
   const hasPending = files.some(f => f.status === 'pending')
 
@@ -43,14 +44,14 @@ export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, 
       {!hasFiles ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="w-2/5">
-            <DropZone onFiles={onFiles} />
+            <DropZone onFiles={onFiles} isAdding={isAdding} />
           </div>
           <input id="file-input-trigger" type="file" multiple accept="image/*" className="hidden"
                  onChange={e => onFiles(Array.from(e.target.files ?? []))} />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-          <DropZone onFiles={onFiles} />
+          <DropZone onFiles={onFiles} isAdding={isAdding} />
           <input id="file-input-trigger" type="file" multiple accept="image/*" className="hidden"
                  onChange={e => onFiles(Array.from(e.target.files ?? []))} />
           <FileList files={files} onRemove={onRemove} />

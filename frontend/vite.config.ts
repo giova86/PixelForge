@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/process': 'http://localhost:8000',
+      '/resize': 'http://localhost:8000',
       '/stream': 'http://localhost:8000',
       '/result': 'http://localhost:8000',
       '/download': 'http://localhost:8000',

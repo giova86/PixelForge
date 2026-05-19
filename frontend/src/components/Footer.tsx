@@ -2,21 +2,41 @@ import type { FileEntry } from '../types'
 
 interface FooterProps {
   files: FileEntry[]
-  sessionId: string
+  batchId: string
 }
 
 function formatBytes(b: number) {
   return b >= 1_000_000 ? `${(b / 1_000_000).toFixed(1)} MB` : `${(b / 1024).toFixed(0)} KB`
 }
 
-export function Footer({ files, sessionId }: FooterProps) {
+function triggerDirectDownload(href: string, filename: string) {
+  const a = document.createElement('a')
+  a.href = href
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
+export function Footer({ files, batchId }: FooterProps) {
   const total = files.reduce((s, f) => s + f.file.size, 0)
-  const done = files.filter(f => f.status === 'done').length
+  const doneFiles = files.filter(f => f.status === 'done')
+  const done = doneFiles.length
   const processing = files.filter(f => f.status === 'processing').length
   const pending = files.filter(f => f.status === 'pending').length
+  const allSettled = processing === 0 && pending === 0
 
   const handleDownload = () => {
-    window.open(`/download/${sessionId}`, '_blank')
+    if (done === 1) {
+      const result = doneFiles[0].result
+      if (!result?.outputUrl) return
+      const ext = result.outputFormat
+        ? `.${result.outputFormat === 'jpeg' ? 'jpg' : result.outputFormat}`
+        : ''
+      triggerDirectDownload(result.outputUrl, doneFiles[0].file.name.replace(/\.[^.]+$/, '') + ext)
+    } else {
+      triggerDirectDownload(`/download/batch/${batchId}`, `pixelforge_${batchId.slice(0, 8)}.zip`)
+    }
   }
 
   return (
@@ -29,17 +49,19 @@ export function Footer({ files, sessionId }: FooterProps) {
         {files.length > 0 && (
           <>
             <span>{files.length} file · {formatBytes(total)}</span>
-            <span>{done} elaborati · {processing} in corso · {pending} in coda</span>
+            <span>{done} processed · {processing} in progress · {pending} queued</span>
           </>
         )}
       </div>
       <button
         onClick={handleDownload}
-        disabled={done === 0}
+        disabled={done === 0 || !allSettled}
         className="px-4 py-2 rounded-lg text-xs font-bold text-[#111827] disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
         style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}
       >
-        ⬇ Scarica ZIP {done > 0 ? `(${done} file)` : ''}
+        {done === 1
+          ? 'Download'
+          : `Download ZIP${done > 0 ? ` (${done} file${done > 1 ? 's' : ''})` : ''}`}
       </button>
     </footer>
   )

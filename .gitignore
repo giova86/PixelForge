@@ -1,7 +1,12 @@
 backend/weights/*.pth
 __pycache__/
 *.pyc
+*.egg-info/
 .env
 node_modules/
 .superpowers/
 .venv/
+.claude/
+frontend/dist/
+backend/.pytest_cache/
+docs/superpowers/

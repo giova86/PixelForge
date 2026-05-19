@@ -157,6 +157,7 @@ export default function App() {
               onClear={resizeQueue.clearAll}
               onRemove={resizeQueue.removeFile}
               processing={resizeProcessing}
+              isAdding={resizeQueue.isAdding}
             />
           ) : (
             <UploadPanel
@@ -170,6 +171,7 @@ export default function App() {
               onRemove={activeQueue.removeFile}
               processing={activeProcessing}
               settingsDirty={settingsDirty}
+              isAdding={activeQueue.isAdding}
             />
           )}
         </div>

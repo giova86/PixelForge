@@ -35,6 +35,7 @@ export interface JobResult {
   originalHeight?: number
   outputWidth?: number
   outputHeight?: number
+  outputSize?: number
 }
 
 export interface FileEntry {
@@ -67,6 +68,7 @@ export interface SSEDoneEvent {
   original_height?: number
   output_width?: number
   output_height?: number
+  output_size?: number
   output_format?: string
 }
 
