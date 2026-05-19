@@ -100,8 +100,12 @@ async def _run_enhance(job_id: str, input_path: Path, scale: int,
         _jobs[job_id] = {"status": "error", "message": str(exc), "session_id": session_id, "batch_id": batch_id}
 
 
-async def _run_resize(job_id: str, input_path: Path, width: int, height: int,
-                      output_format: str, session_id: str, batch_id: str) -> None:
+async def _run_resize(
+    job_id: str, input_path: Path, output_format: str,
+    session_id: str, batch_id: str,
+    width: int | None = None, height: int | None = None,
+    scale_factor: float | None = None,
+) -> None:
     job_dir = JOBS_DIR / job_id
     try:
         _jobs[job_id]["status"] = "processing"
@@ -111,6 +115,10 @@ async def _run_resize(job_id: str, input_path: Path, width: int, height: int,
         img_info = Image.open(io.BytesIO(data))
         original_width, original_height = img_info.size
         img_info.close()
+
+        if scale_factor is not None:
+            width = max(1, round(original_width * scale_factor))
+            height = max(1, round(original_height * scale_factor))
 
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
@@ -195,9 +203,13 @@ async def start_resize(
     file: UploadFile = File(...),
     session_id: str = Form(...),
     batch_id: str = Form(...),
-    width: int = Form(..., ge=1, le=16384),
-    height: int = Form(..., ge=1, le=16384),
+    width: int | None = Form(None, ge=1, le=16384),
+    height: int | None = Form(None, ge=1, le=16384),
+    scale_factor: float | None = Form(None, gt=0, lt=1),
 ):
+    if scale_factor is None and (width is None or height is None):
+        raise HTTPException(status_code=422, detail="Provide either width+height or scale_factor")
+
     job_id = str(uuid.uuid4())
     job_dir = JOBS_DIR / job_id
     job_dir.mkdir(parents=True)
@@ -213,7 +225,10 @@ async def start_resize(
     output_format = _EXT_TO_FORMAT.get(suffix, "jpeg")
 
     _jobs[job_id] = {"status": "pending", "session_id": session_id, "batch_id": batch_id, "original_stem": original_stem}
-    asyncio.create_task(_run_resize(job_id, input_path, width, height, output_format, session_id, batch_id))
+    asyncio.create_task(_run_resize(
+        job_id, input_path, output_format, session_id, batch_id,
+        width=width, height=height, scale_factor=scale_factor,
+    ))
 
     return JobStarted(job_id=job_id)
 

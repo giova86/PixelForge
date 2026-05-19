@@ -74,3 +74,25 @@ async def test_resize_result_after_process():
         r2 = await c.get(f"/result/{job_id}")
     assert r2.status_code == 200
     assert r2.headers["content-type"].startswith("image/")
+
+
+@pytest.mark.asyncio
+async def test_resize_with_scale_factor_returns_job_id():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/resize", data={
+            "session_id": "test-scale-session",
+            "batch_id": "test-scale-batch",
+            "scale_factor": "0.5",
+        }, files={"file": ("test.jpg", _jpeg_bytes(200, 100), "image/jpeg")})
+    assert r.status_code == 200
+    assert "job_id" in r.json()
+
+
+@pytest.mark.asyncio
+async def test_resize_without_params_returns_422():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/resize", data={
+            "session_id": "s",
+            "batch_id": "b",
+        }, files={"file": ("test.jpg", _jpeg_bytes(), "image/jpeg")})
+    assert r.status_code == 422
