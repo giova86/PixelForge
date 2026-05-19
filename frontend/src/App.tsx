@@ -19,9 +19,11 @@ const DEFAULT_SETTINGS: ProcessingSettings = {
 }
 
 const DEFAULT_RESIZE_SETTINGS: ResizeSettings = {
+  mode: 'dimensions',
   width: 800,
   height: 600,
   lockAspect: true,
+  scaleFactor: 0.5,
 }
 
 export default function App() {
@@ -97,9 +99,8 @@ export default function App() {
   }, [])
 
   const handleResizeFile = useCallback((incoming: File[]) => {
-    resizeQueue.clearAll()
-    resizeQueue.addFiles(incoming.slice(0, 1))
-  }, [resizeQueue.clearAll, resizeQueue.addFiles])
+    resizeQueue.addFiles(incoming)
+  }, [resizeQueue.addFiles])
 
   const handleProcess = useCallback(async () => {
     const newBatchId = crypto.randomUUID()
@@ -119,7 +120,7 @@ export default function App() {
       setResizeBatchId(newBatchId)
       setResizeProcessing(true)
       const toProcess = resizeQueue.resetAll()
-      await processResize(toProcess, resizeSettings.width, resizeSettings.height, newBatchId)
+      await processResize(toProcess, resizeSettings, newBatchId)
       setResizeProcessing(false)
     }
   }, [mode, settings, resizeSettings, compressQueue.resetAll, enhanceQueue.resetAll, resizeQueue.resetAll, compressProcessQueue, enhanceProcessQueue, processResize])
@@ -137,6 +138,7 @@ export default function App() {
               onResizeSettingsChange={setResizeSettings}
               onProcess={handleProcess}
               onClear={resizeQueue.clearAll}
+              onRemove={resizeQueue.removeFile}
               processing={resizeProcessing}
             />
           ) : (
