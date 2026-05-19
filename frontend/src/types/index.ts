@@ -9,10 +9,14 @@ export interface ProcessingSettings {
   keepExif: boolean
 }
 
+export type ResizeMode = 'dimensions' | 'scale'
+
 export interface ResizeSettings {
+  mode: ResizeMode
   width: number
   height: number
   lockAspect: boolean
+  scaleFactor: 0.5 | 0.333 | 0.25
 }
 
 export interface JobResult {
