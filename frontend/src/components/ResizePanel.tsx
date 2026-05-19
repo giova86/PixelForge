@@ -39,6 +39,7 @@ export function ResizePanel({
     if (!firstFile) { setOriginalDims(null); return }
     const img = new window.Image()
     img.onload = () => setOriginalDims({ w: img.naturalWidth, h: img.naturalHeight })
+    img.onerror = () => setOriginalDims(null)
     img.src = firstFile.previewUrl
   }, [firstFile?.id])
 
