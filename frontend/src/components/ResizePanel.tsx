@@ -252,7 +252,7 @@ export function ResizePanel({
           <button
             onClick={onProcess}
             disabled={!canProcess}
-            className="w-full py-2.5 rounded-lg text-sm font-bold text-[#111827] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            className="w-full py-2.5 rounded-lg text-sm font-bold text-[#111827] disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:brightness-110 active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}
           >
             {processing

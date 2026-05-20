@@ -1,3 +1,4 @@
+PixelForge.app/
 backend/weights/*.pth
 __pycache__/
 *.pyc
