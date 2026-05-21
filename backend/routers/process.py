@@ -272,10 +272,12 @@ async def get_result(job_id: str):
     if not job or job["status"] != "done":
         raise HTTPException(status_code=404, detail="Result not ready")
     output_path: Path = job["output"]
+    original_stem = job.get("original_stem", "image")
+    filename = original_stem + output_path.suffix
     return FileResponse(
         output_path,
         media_type=job["mime"],
-        filename=output_path.name,
+        filename=filename,
         content_disposition_type="attachment",
     )
 
