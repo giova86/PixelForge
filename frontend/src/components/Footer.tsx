@@ -38,6 +38,11 @@ export function Footer({ files, batchId }: FooterProps) {
   const pending = files.filter(f => f.status === 'pending').length
   const allSettled = processing === 0 && pending === 0
 
+  const outputTotal = doneFiles.reduce((s, f) => {
+    const size = f.result?.compressedSize ?? f.result?.outputSize ?? 0
+    return s + size
+  }, 0)
+
   const handleDownload = async () => {
     if (downloading) return
     if (done === 1) {
@@ -61,9 +66,10 @@ export function Footer({ files, batchId }: FooterProps) {
     }
   }
 
+  const sizeLabel = outputTotal > 0 ? ` · ${formatBytes(outputTotal)}` : ''
   const buttonLabel = done === 1
-    ? 'Download'
-    : `Download ZIP${done > 0 ? ` (${done} file${done > 1 ? 's' : ''})` : ''}`
+    ? `Download${sizeLabel}`
+    : `Download ZIP${done > 0 ? ` (${done} file${done > 1 ? 's' : ''}${sizeLabel})` : ''}`
 
   return (
     <footer className="flex items-center justify-between px-6 py-2.5 bg-[#111827] border-t border-[#1f2937] flex-shrink-0">
@@ -75,7 +81,13 @@ export function Footer({ files, batchId }: FooterProps) {
         {files.length > 0 && (
           <>
             <span>{files.length} file · {formatBytes(total)}</span>
-            <span>{done} processed · {processing} in progress · {pending} queued</span>
+            <span className="flex items-center gap-1">
+              <span className="text-[#34d399]">{done} processed</span>
+              <span className="text-[#4b5563]">·</span>
+              <span className="text-[#f3f4f6]">{processing} in progress</span>
+              <span className="text-[#4b5563]">·</span>
+              <span className="text-[#f59e0b]">{pending} queued</span>
+            </span>
           </>
         )}
       </div>

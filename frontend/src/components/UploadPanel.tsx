@@ -54,8 +54,8 @@ export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, 
           <DropZone onFiles={onFiles} isAdding={isAdding} />
           <input id="file-input-trigger" type="file" multiple accept="image/*" className="hidden"
                  onChange={e => onFiles(Array.from(e.target.files ?? []))} />
-          <FileList files={files} onRemove={onRemove} />
           <SettingsBox mode={mode} settings={settings} onChange={onSettingsChange} />
+          <FileList files={files} onRemove={onRemove} />
         </div>
       )}
 

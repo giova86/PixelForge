@@ -46,6 +46,8 @@ export interface FileEntry {
   result?: JobResult
   errorMessage?: string
   previewUrl: string
+  width?: number
+  height?: number
 }
 
 export interface SSEProgressEvent {

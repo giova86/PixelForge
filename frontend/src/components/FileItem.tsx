@@ -24,7 +24,15 @@ export function FileItem({ entry, onRemove }: FileItemProps) {
       <img src={entry.previewUrl} alt="" className="w-9 h-9 rounded object-cover flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate text-[#e5e7eb]">{entry.file.name}</p>
-        <p className="text-xs text-[#6b7280]">{formatBytes(entry.file.size)}</p>
+        <p className="text-xs text-[#6b7280]">
+          {formatBytes(entry.file.size)}
+          {entry.width && entry.height && (
+            <>
+              <span className="mx-1.5 text-[#f3f4f6]">-</span>
+              <span className="text-[#34d399]">{entry.width} × {entry.height} px</span>
+            </>
+          )}
+        </p>
         {entry.errorMessage && <p className="text-xs text-[#f87171] truncate">{entry.errorMessage}</p>}
       </div>
       <div className="flex-shrink-0 flex items-center gap-2">
