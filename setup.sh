@@ -72,7 +72,11 @@ content = re.sub(r'def get_version\(\):.*?(?=\ndef |\nsetup)', new_fn, content, 
 with open(path, "w") as f:
     f.write(content)
 PATCH
-    cd "$TMP/basicsr" && "$PY" setup.py install --quiet 2>/dev/null
+    cd "$TMP/basicsr"
+    if ! "$PY" setup.py install --quiet 2>/dev/null; then
+      cd "$ROOT"; rm -rf "$TMP"
+      pf_fail "basicsr source install failed"
+    fi
     cd "$ROOT"
     rm -rf "$TMP"
   fi
@@ -93,8 +97,8 @@ _download_weight() {
     pf_substep_done "$name" "present"
   else
     pf_substep_downloading "$name" "$size"
-    curl -L --silent -o "$WEIGHTS_DIR/$name" "$url" 2>/dev/null \
-      || { printf '\n'; pf_fail "download failed: $name"; }
+    curl -L --silent --fail -o "$WEIGHTS_DIR/$name" "$url" 2>/dev/null \
+      || { rm -f "$WEIGHTS_DIR/$name"; printf '\n'; pf_fail "download failed: $name"; }
     pf_substep_downloaded "$name"
   fi
 }

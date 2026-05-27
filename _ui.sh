@@ -68,6 +68,8 @@ pf_step_plain() {
 # ── Step header without spinner (for steps with sub-items) ───────────────────
 pf_step_header() {
   local n="$1" total="$2" label="$3"
+  _PF_STEP_VISIBLE="  [${n}/${total}]  ${label}"
+  _PF_STEP_LABEL="  \033[1m[${n}/${total}]\033[0m  ${label}"
   printf '  \033[1m[%s/%s]\033[0m  %s\n' "$n" "$total" "$label"
 }
 
@@ -144,3 +146,5 @@ pf_shutdown_msg() {
 pf_shutdown_done() {
   printf '  \033[32m✓\033[0m  Done.\n\n'
 }
+
+trap '_pf_spinner_stop' EXIT
