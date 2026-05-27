@@ -41,9 +41,9 @@ _pf_spinner_start() {
 _pf_spinner_stop() {
   if [ -n "$_PF_SPINNER_PID" ]; then
     kill "$_PF_SPINNER_PID" 2>/dev/null
-    wait "$_PF_SPINNER_PID" 2>/dev/null
+    wait "$_PF_SPINNER_PID" 2>/dev/null || true
     _PF_SPINNER_PID=""
-    printf '\r%-80s\r' ''
+    printf '\r\033[2K'
   fi
 }
 
@@ -117,7 +117,7 @@ pf_substep_downloading() {
 
 pf_substep_downloaded() {
   local name="$1"
-  printf '\r         \033[2m%-40s  ✓  downloaded\033[0m\n' "$name"
+  printf '\r\033[2K         \033[2m%-40s  ✓  downloaded\033[0m\n' "$name"
 }
 
 # ── Status box ────────────────────────────────────────────────────────────────
@@ -130,7 +130,7 @@ pf_status_box() {
   printf '  \033[36m│\033[0m   \033[32m●\033[0m  Frontend   \033[36m→\033[0m   \033[1mhttp://localhost:5173\033[0m            \033[36m│\033[0m\n'
   printf '  \033[36m│\033[0m   \033[32m●\033[0m  Backend    \033[36m→\033[0m   \033[1mhttp://localhost:8000\033[0m            \033[36m│\033[0m\n'
   printf '  \033[36m│\033[0m                                                      \033[36m│\033[0m\n'
-  printf '  \033[36m│\033[0m   Press  \033[1mCtrl+C\033[0m  to stop                               \033[36m│\033[0m\n'
+  printf '  \033[36m│\033[0m   Press  \033[1mCtrl+C\033[0m  to stop                             \033[36m│\033[0m\n'
   printf '  \033[36m│\033[0m                                                      \033[36m│\033[0m\n'
   printf '  \033[36m╰──────────────────────────────────────────────────────╯\033[0m\n'
   printf '\n'
