@@ -47,16 +47,17 @@ fi
 
 # ── 4. basicsr + realesrgan ───────────────────────────────────────────────────
 pf_step 4 6 "basicsr + realesrgan"
-if "$PY" -c "import basicsr" 2>/dev/null; then
+if "$PY" -c "import basicsr; import realesrgan" 2>/dev/null; then
   pf_skip "already installed"
 else
-  TMP=$(mktemp -d)
-  git clone --quiet --depth 1 https://github.com/XPixelGroup/BasicSR.git "$TMP/basicsr" 2>/dev/null \
-    || pf_fail "git clone failed"
-  cat > "$TMP/basicsr/basicsr/version.py" << 'EOF'
+  if ! "$PY" -c "import basicsr" 2>/dev/null; then
+    TMP=$(mktemp -d)
+    git clone --quiet --depth 1 https://github.com/XPixelGroup/BasicSR.git "$TMP/basicsr" 2>/dev/null \
+      || pf_fail "git clone failed"
+    cat > "$TMP/basicsr/basicsr/version.py" << 'EOF'
 __version__ = "1.4.2"
 EOF
-  python3 - "$TMP/basicsr/setup.py" 2>/dev/null << 'PATCH'
+    python3 - "$TMP/basicsr/setup.py" 2>/dev/null << 'PATCH'
 import sys, re
 path = sys.argv[1]
 with open(path) as f:
@@ -71,14 +72,14 @@ content = re.sub(r'def get_version\(\):.*?(?=\ndef |\nsetup)', new_fn, content, 
 with open(path, "w") as f:
     f.write(content)
 PATCH
-  cd "$TMP/basicsr" && "$PY" setup.py install --quiet 2>/dev/null
-  cd "$ROOT"
-  rm -rf "$TMP"
-  pf_done "installed from source"
-fi
-
-if ! "$PY" -c "import realesrgan" 2>/dev/null; then
-  "$PIP" install --quiet realesrgan 2>/dev/null
+    cd "$TMP/basicsr" && "$PY" setup.py install --quiet 2>/dev/null
+    cd "$ROOT"
+    rm -rf "$TMP"
+  fi
+  if ! "$PY" -c "import realesrgan" 2>/dev/null; then
+    "$PIP" install --quiet realesrgan 2>/dev/null
+  fi
+  pf_done
 fi
 
 # ── 5. Model weights ──────────────────────────────────────────────────────────
