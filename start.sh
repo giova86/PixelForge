@@ -21,11 +21,16 @@ fi
 BACKEND_PID=""
 FRONTEND_PID=""
 
+_CLEANED=0
 cleanup() {
-  pf_shutdown_msg
+  [ "$_CLEANED" -eq 1 ] && return
+  _CLEANED=1
+  _pf_spinner_stop
+  [ -n "$BACKEND_PID" ] && pf_shutdown_msg
   kill "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
   wait "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
-  pf_shutdown_done
+  [ -n "$BACKEND_PID" ] && pf_shutdown_done
+  true
 }
 trap cleanup EXIT INT TERM
 
@@ -55,6 +60,9 @@ cd "$ROOT/frontend"
 npm run dev > /dev/null 2>&1 &
 FRONTEND_PID=$!
 sleep 1
+if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
+  pf_fail "process exited immediately"
+fi
 pf_done "ready"
 
 # ── Status box ────────────────────────────────────────────────────────────────
