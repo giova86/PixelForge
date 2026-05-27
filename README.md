@@ -1,10 +1,9 @@
 # PixelForge
 
 A local, offline image processing app. Drop in images, choose what you want to do — compress, AI-upscale, or resize — and download the results. No cloud, no account, no file size limits.
-
-![PixelForge screenshot](frontend/src/assets/hero.png)
-
----
+<p align="center">
+  <img src="hero.png" width="90%">
+</p>
 
 ## Features
 
