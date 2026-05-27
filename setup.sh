@@ -5,23 +5,25 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV="$ROOT/.venv"
 PYTHON="python3.13"
 
-echo "==> PixelForge setup"
-echo ""
+source "$ROOT/_ui.sh"
+
+pf_banner "setup"
 
 # ── 1. Virtual environment ────────────────────────────────────────────────────
+pf_step 1 6 "Virtual environment"
 if [ -d "$VENV" ]; then
-  echo "[1/5] Venv already exists at .venv — skipping creation"
+  pf_skip "already exists"
 else
-  echo "[1/5] Creating Python venv at .venv"
-  "$PYTHON" -m venv "$VENV"
+  "$PYTHON" -m venv "$VENV" 2>/dev/null || pf_fail "python3.13 not found"
+  pf_done "created"
 fi
 
 PY="$VENV/bin/python"
 PIP="$VENV/bin/pip"
 
-# ── 2. Core backend deps (fast) ───────────────────────────────────────────────
-echo "[2/5] Installing core backend dependencies..."
-"$PIP" install --quiet --upgrade pip
+# ── 2. Core backend deps ──────────────────────────────────────────────────────
+pf_step 2 6 "Backend dependencies"
+"$PIP" install --quiet --upgrade pip 2>/dev/null
 "$PIP" install --quiet \
   "fastapi==0.111.0" \
   "uvicorn[standard]==0.29.0" \
@@ -31,38 +33,34 @@ echo "[2/5] Installing core backend dependencies..."
   "pillow-heif" \
   "pytest==8.2.0" \
   "httpx==0.27.0" \
-  "pytest-asyncio==0.23.6"
+  "pytest-asyncio==0.23.6" 2>/dev/null
+pf_done
 
 # ── 3. PyTorch ────────────────────────────────────────────────────────────────
-echo "[3/5] Installing PyTorch (this may take a few minutes)..."
+pf_step 3 6 "PyTorch"
 if "$PY" -c "import torch" 2>/dev/null; then
-  echo "      torch already installed — skipping"
+  pf_skip "already installed"
 else
-  "$PIP" install --quiet torch torchvision
+  "$PIP" install --quiet torch torchvision 2>/dev/null
+  pf_done
 fi
 
-# ── 4. basicsr (requires workaround on Python 3.13) + realesrgan ─────────────
-echo "[4/5] Installing basicsr + realesrgan..."
+# ── 4. basicsr + realesrgan ───────────────────────────────────────────────────
+pf_step 4 6 "basicsr + realesrgan"
 if "$PY" -c "import basicsr" 2>/dev/null; then
-  echo "      basicsr already installed — skipping"
+  pf_skip "already installed"
 else
-  # basicsr 1.4.2 has a Python 3.13 incompatibility in setup.py (exec() locals bug).
-  # Workaround: clone, pre-create version.py, patch setup.py, install from source.
   TMP=$(mktemp -d)
-  echo "      Cloning BasicSR to fix Python 3.13 compatibility..."
-  git clone --quiet --depth 1 https://github.com/XPixelGroup/BasicSR.git "$TMP/basicsr"
-  # Pre-create version.py so setup.py doesn't need exec() to populate it
+  git clone --quiet --depth 1 https://github.com/XPixelGroup/BasicSR.git "$TMP/basicsr" 2>/dev/null \
+    || pf_fail "git clone failed"
   cat > "$TMP/basicsr/basicsr/version.py" << 'EOF'
 __version__ = "1.4.2"
 EOF
-  # Patch setup.py: replace get_version() with direct read of version.py
-  python3 - "$TMP/basicsr/setup.py" << 'PATCH'
+  python3 - "$TMP/basicsr/setup.py" 2>/dev/null << 'PATCH'
 import sys, re
-
 path = sys.argv[1]
 with open(path) as f:
     content = f.read()
-
 new_fn = '''def get_version():
     ns = {}
     with open("basicsr/version.py") as f:
@@ -70,50 +68,47 @@ new_fn = '''def get_version():
     return ns["__version__"]
 '''
 content = re.sub(r'def get_version\(\):.*?(?=\ndef |\nsetup)', new_fn, content, flags=re.DOTALL)
-
 with open(path, "w") as f:
     f.write(content)
-print("Patched setup.py")
 PATCH
-  cd "$TMP/basicsr" && "$PY" setup.py install --quiet 2>&1 | tail -3
+  cd "$TMP/basicsr" && "$PY" setup.py install --quiet 2>/dev/null
   cd "$ROOT"
   rm -rf "$TMP"
-  echo "      basicsr installed from source"
+  pf_done "installed from source"
 fi
 
-if "$PY" -c "import realesrgan" 2>/dev/null; then
-  echo "      realesrgan already installed — skipping"
-else
-  "$PIP" install --quiet realesrgan
+if ! "$PY" -c "import realesrgan" 2>/dev/null; then
+  "$PIP" install --quiet realesrgan 2>/dev/null
 fi
 
 # ── 5. Model weights ──────────────────────────────────────────────────────────
-echo "[5/5] Checking Real-ESRGAN model weights..."
+pf_step_header 5 6 "Model weights"
 WEIGHTS_DIR="$ROOT/backend/weights"
 mkdir -p "$WEIGHTS_DIR"
 
-download_weight() {
-  local name="$1" url="$2"
+_download_weight() {
+  local name="$1" url="$2" size="${3:-}"
   if [ -f "$WEIGHTS_DIR/$name" ]; then
-    echo "      $name already present — skipping"
+    pf_substep_done "$name" "present"
   else
-    echo "      Downloading $name (~65 MB)..."
-    curl -L --progress-bar -o "$WEIGHTS_DIR/$name" "$url"
+    pf_substep_downloading "$name" "$size"
+    curl -L --silent -o "$WEIGHTS_DIR/$name" "$url" 2>/dev/null \
+      || { printf '\n'; pf_fail "download failed: $name"; }
+    pf_substep_downloaded "$name"
   fi
 }
 
-download_weight "RealESRGAN_x4plus.pth" \
-  "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
-download_weight "RealESRGAN_x2plus.pth" \
-  "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth"
+_download_weight "RealESRGAN_x4plus.pth" \
+  "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth" \
+  "~65 MB"
+_download_weight "RealESRGAN_x2plus.pth" \
+  "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth" \
+  "~65 MB"
 
-# ── Frontend deps ─────────────────────────────────────────────────────────────
-echo ""
-echo "Installing frontend dependencies..."
-cd "$ROOT/frontend" && npm install --silent
+# ── 6. Frontend deps ──────────────────────────────────────────────────────────
+pf_step 6 6 "Frontend dependencies"
+cd "$ROOT/frontend" && npm install --silent 2>/dev/null
 cd "$ROOT"
+pf_done
 
-echo ""
-echo "✓ Setup complete."
-echo ""
-echo "  Run the app:  ./start.sh"
+printf '\n  \033[32m✓\033[0m  \033[1mSetup complete\033[0m  \033[2m—  run ./start.sh\033[0m\n\n'
