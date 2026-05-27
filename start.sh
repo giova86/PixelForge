@@ -51,6 +51,9 @@ for i in $(seq 1 20); do
   if [ "$i" -eq 20 ]; then
     pf_fail "not responding after 10s"
   fi
+  if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+    pf_fail "backend process died"
+  fi
   sleep 0.5
 done
 

@@ -33,7 +33,7 @@ pf_step 2 6 "Backend dependencies"
   "pillow-heif" \
   "pytest==8.2.0" \
   "httpx==0.27.0" \
-  "pytest-asyncio==0.23.6" 2>/dev/null
+  "pytest-asyncio==0.23.6" 2>/dev/null || pf_fail "pip install failed"
 pf_done
 
 # ── 3. PyTorch ────────────────────────────────────────────────────────────────
@@ -72,6 +72,7 @@ content = re.sub(r'def get_version\(\):.*?(?=\ndef |\nsetup)', new_fn, content, 
 with open(path, "w") as f:
     f.write(content)
 PATCH
+[ $? -eq 0 ] || pf_fail "setup.py patch failed"
     cd "$TMP/basicsr"
     if ! "$PY" setup.py install --quiet 2>/dev/null; then
       cd "$ROOT"; rm -rf "$TMP"
@@ -109,10 +110,11 @@ _download_weight "RealESRGAN_x4plus.pth" \
 _download_weight "RealESRGAN_x2plus.pth" \
   "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth" \
   "~65 MB"
+printf '  \033[1m[5/6]\033[0m  Model weights                          \033[32m✓\033[0m  \033[2mdone\033[0m\n'
 
 # ── 6. Frontend deps ──────────────────────────────────────────────────────────
 pf_step 6 6 "Frontend dependencies"
-cd "$ROOT/frontend" && npm install --silent 2>/dev/null
+cd "$ROOT/frontend" && npm install --silent 2>/dev/null || pf_fail "npm install failed"
 cd "$ROOT"
 pf_done
 
