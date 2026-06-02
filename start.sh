@@ -43,13 +43,13 @@ cd "$ROOT/backend"
   > /dev/null 2>&1 &
 BACKEND_PID=$!
 
-for i in $(seq 1 20); do
+for i in $(seq 1 120); do
   if curl -s http://localhost:8000/health > /dev/null 2>&1; then
     pf_done "ready"
     break
   fi
-  if [ "$i" -eq 20 ]; then
-    pf_fail "not responding after 10s"
+  if [ "$i" -eq 120 ]; then
+    pf_fail "not responding after 60s"
   fi
   if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
     pf_fail "backend process died"
