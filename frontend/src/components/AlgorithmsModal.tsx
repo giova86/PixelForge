@@ -36,14 +36,14 @@ export function AlgorithmsModal({ onClose }: AlgorithmsModalProps) {
       onClick={onClose}
     >
       <div
-        className="relative bg-[#111827] border border-[#1f2937] rounded-2xl w-full max-w-2xl mx-4 shadow-2xl"
+        className="relative bg-bg-panel border border-border-subtle rounded-2xl w-full max-w-2xl mx-4 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1f2937]">
-          <h2 className="text-sm font-bold text-[#e5e7eb] uppercase tracking-widest">Algorithms</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+          <h2 className="text-sm font-bold text-text-primary uppercase tracking-widest">Algorithms</h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-[#6b7280] hover:text-[#e5e7eb] hover:bg-[#1f2937] transition-colors text-base"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-colors text-base"
           >
             ✕
           </button>
@@ -51,7 +51,7 @@ export function AlgorithmsModal({ onClose }: AlgorithmsModalProps) {
 
         <div className="p-6 flex flex-col gap-5">
           {ALGORITHMS.map(alg => (
-            <div key={alg.mode} className="bg-[#1f2937] border border-[#374151] rounded-xl p-4 flex flex-col gap-3">
+            <div key={alg.mode} className="bg-bg-elevated border border-border rounded-xl p-4 flex flex-col gap-3">
               <div className="flex items-center gap-2.5">
                 <span
                   className="text-xs font-bold px-2 py-0.5 rounded-md"
@@ -59,12 +59,12 @@ export function AlgorithmsModal({ onClose }: AlgorithmsModalProps) {
                 >
                   {alg.mode}
                 </span>
-                <span className="text-sm font-semibold text-[#e5e7eb]">{alg.name}</span>
+                <span className="text-sm font-semibold text-text-primary">{alg.name}</span>
               </div>
-              <p className="text-xs text-[#9ca3af] leading-relaxed">{alg.description}</p>
+              <p className="text-xs text-text-secondary leading-relaxed">{alg.description}</p>
               <ul className="flex flex-wrap gap-2">
                 {alg.details.map(d => (
-                  <li key={d} className="text-xs px-2 py-0.5 bg-[#111827] border border-[#374151] rounded-md text-[#6b7280]">
+                  <li key={d} className="text-xs px-2 py-0.5 bg-bg-panel border border-border rounded-md text-text-muted">
                     {d}
                   </li>
                 ))}

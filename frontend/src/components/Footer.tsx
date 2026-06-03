@@ -72,21 +72,21 @@ export function Footer({ files, batchId }: FooterProps) {
     : `Download ZIP${done > 0 ? ` (${done} file${done > 1 ? 's' : ''}${sizeLabel})` : ''}`
 
   return (
-    <footer className="flex items-center justify-between px-6 py-2.5 bg-[#111827] border-t border-[#1f2937] flex-shrink-0">
-      <div className="flex items-center gap-5 text-xs text-[#4b5563]">
+    <footer className="flex items-center justify-between px-6 py-2.5 bg-bg-panel border-t border-border-subtle flex-shrink-0">
+      <div className="flex items-center gap-5 text-xs text-text-faint">
         <span className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-success" />
           Backend FastAPI · SSE
         </span>
         {files.length > 0 && (
           <>
             <span>{files.length} file · {formatBytes(total)}</span>
             <span className="flex items-center gap-1">
-              <span className="text-[#34d399]">{done} processed</span>
-              <span className="text-[#4b5563]">·</span>
-              <span className="text-[#f3f4f6]">{processing} in progress</span>
-              <span className="text-[#4b5563]">·</span>
-              <span className="text-[#f59e0b]">{pending} queued</span>
+              <span className="text-success">{done} processed</span>
+              <span className="text-text-faint">·</span>
+              <span className="text-text-primary">{processing} in progress</span>
+              <span className="text-text-faint">·</span>
+              <span className="text-accent">{pending} queued</span>
             </span>
           </>
         )}
@@ -94,7 +94,7 @@ export function Footer({ files, batchId }: FooterProps) {
       <button
         onClick={handleDownload}
         disabled={done === 0 || !allSettled || downloading}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-[#111827] disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:brightness-110 active:scale-[0.97]"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-on-accent disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:brightness-110 active:scale-[0.97]"
         style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}
       >
         {downloading && <Spinner />}

@@ -82,8 +82,8 @@ export default function App() {
     onError: (id: string, message: string) => resizeQueue.setError(id, message),
   }
 
-  const { processQueue: compressProcessQueue } = useProcessing(compressCallbacks, SESSION_ID, compressBatchId)
-  const { processQueue: enhanceProcessQueue } = useProcessing(enhanceCallbacks, SESSION_ID, enhanceBatchId)
+  const { processQueue: compressProcessQueue } = useProcessing(compressCallbacks, SESSION_ID)
+  const { processQueue: enhanceProcessQueue } = useProcessing(enhanceCallbacks, SESSION_ID)
   const { processResize } = useResizeProcessing(resizeCallbacks, SESSION_ID)
 
   const activeQueue = mode === 'compress' ? compressQueue : mode === 'enhance' ? enhanceQueue : resizeQueue
@@ -143,10 +143,10 @@ export default function App() {
   }, [mode, settings, resizeSettings, compressQueue.resetAll, enhanceQueue.resetAll, resizeQueue.resetAll, compressProcessQueue, enhanceProcessQueue, processResize])
 
   return (
-    <div className="flex flex-col h-screen bg-[#0d1117]">
+    <div className="flex flex-col h-screen bg-bg-base">
       <Navbar mode={mode} onModeChange={setMode} backendOnline={backendOnline} />
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 border-r border-[#1f2937] overflow-hidden">
+        <div className="flex-1 border-r border-border-subtle overflow-hidden">
           {mode === 'resize' ? (
             <ResizePanel
               files={resizeQueue.files}

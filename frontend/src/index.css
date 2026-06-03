@@ -1,20 +1,62 @@
 @import "tailwindcss";
 
-@theme {
-  --color-bg-base: #0d1117;
-  --color-bg-panel: #111827;
-  --color-bg-elevated: #1f2937;
-  --color-border: #374151;
-  --color-border-subtle: #1f2937;
-  --color-text-primary: #e5e7eb;
-  --color-text-secondary: #9ca3af;
-  --color-text-muted: #6b7280;
-  --color-text-faint: #4b5563;
+/*
+ * Tailwind v4 utilities are generated from these tokens. `inline` makes each
+ * utility resolve to a live `var(--…)`, so swapping the variable values at
+ * runtime (via the `.light` class on <html>) re-themes the whole app.
+ */
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-panel: var(--bg-panel);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-info: var(--info);
+  /* Constant brand tokens (used in gradients / dark text on accent buttons) */
+  --color-on-accent: #111827;
   --color-accent-from: #f59e0b;
   --color-accent-to: #ef4444;
-  --color-success: #34d399;
-  --color-error: #f87171;
-  --color-info: #818cf8;
+}
+
+/* Dark theme — default */
+:root {
+  --bg-base: #0d1117;
+  --bg-panel: #111827;
+  --bg-elevated: #1f2937;
+  --border: #374151;
+  --border-subtle: #1f2937;
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-faint: #4b5563;
+  --accent: #f59e0b;
+  --success: #34d399;
+  --error: #f87171;
+  --info: #818cf8;
+}
+
+/* Light theme */
+html.light {
+  --bg-base: #f9fafb;
+  --bg-panel: #ffffff;
+  --bg-elevated: #f3f4f6;
+  --border: #d1d5db;
+  --border-subtle: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --accent: #d97706;
+  --success: #059669;
+  --error: #dc2626;
+  --info: #4f46e5;
 }
 
 body {

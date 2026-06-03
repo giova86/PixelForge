@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ProcessingMode } from '../types'
+import { useTheme } from '../hooks/useTheme'
 import { AlgorithmsModal } from './AlgorithmsModal'
 
 interface NavbarProps {
@@ -16,10 +17,11 @@ const MODE_LABELS: Record<ProcessingMode, string> = {
 
 export function Navbar({ mode, onModeChange, backendOnline }: NavbarProps) {
   const [showAlgorithms, setShowAlgorithms] = useState(false)
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <>
-      <nav className="relative flex items-center px-6 h-14 bg-[#111827] border-b border-[#1f2937] flex-shrink-0">
+      <nav className="relative flex items-center px-6 h-14 bg-bg-panel border-b border-border-subtle flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold"
                style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}>
@@ -31,15 +33,15 @@ export function Navbar({ mode, onModeChange, backendOnline }: NavbarProps) {
           </span>
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2 flex bg-[#1f2937] border border-[#374151] rounded-xl p-1 gap-1">
+        <div className="absolute left-1/2 -translate-x-1/2 flex bg-bg-elevated border border-border rounded-xl p-1 gap-1">
           {(['compress', 'enhance', 'resize'] as ProcessingMode[]).map(m => (
             <button
               key={m}
               onClick={() => onModeChange(m)}
               className={`w-24 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 mode === m
-                  ? 'text-[#111827] font-semibold'
-                  : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+                  ? 'text-on-accent font-semibold'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
               style={mode === m ? { background: 'linear-gradient(135deg, #f59e0b, #ef4444)' } : {}}
             >
@@ -50,15 +52,23 @@ export function Navbar({ mode, onModeChange, backendOnline }: NavbarProps) {
 
         <div className="flex items-center gap-3 ml-auto">
           <button
+            onClick={toggleTheme}
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            aria-label="Toggle color theme"
+            className="w-7 h-7 flex items-center justify-center text-sm bg-bg-elevated border border-border rounded-md text-text-muted hover:text-text-primary hover:border-text-faint transition-colors"
+          >
+            {theme === 'light' ? '☾' : '☀'}
+          </button>
+          <button
             onClick={() => setShowAlgorithms(true)}
-            className="text-xs px-2.5 py-1 bg-[#1f2937] border border-[#374151] rounded-md text-[#6b7280] hover:text-[#e5e7eb] hover:border-[#4b5563] transition-colors"
+            className="text-xs px-2.5 py-1 bg-bg-elevated border border-border rounded-md text-text-muted hover:text-text-primary hover:border-text-faint transition-colors"
           >
             Algorithms
           </button>
           <span className={`text-xs px-2.5 py-1 border rounded-md ${
             backendOnline
-              ? 'bg-[#1f2937] border-[#065f46] text-[#34d399]'
-              : 'bg-[#1f2937] border-[#7f1d1d] text-[#f87171]'
+              ? 'bg-bg-elevated border-[#065f46] text-success'
+              : 'bg-bg-elevated border-[#7f1d1d] text-error'
           }`}>
             {backendOnline ? '● Backend online' : '● Backend offline'}
           </span>

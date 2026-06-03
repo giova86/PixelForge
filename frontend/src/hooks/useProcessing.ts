@@ -10,7 +10,6 @@ interface ProcessingCallbacks {
 export function useProcessing(
   callbacks: React.MutableRefObject<ProcessingCallbacks>,
   sessionId: string,
-  currentBatchId: string,
 ) {
   const processQueue = useCallback(async (
     entries: FileEntry[],

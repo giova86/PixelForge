@@ -82,20 +82,20 @@ export function ResizePanel({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-5 h-14 bg-[#111827] border-b border-[#1f2937] flex-shrink-0">
-        <span className="text-xs font-semibold text-[#9ca3af] uppercase tracking-widest">Uploaded files</span>
+      <div className="flex items-center justify-between px-5 h-14 bg-bg-panel border-b border-border-subtle flex-shrink-0">
+        <span className="text-xs font-semibold text-text-secondary uppercase tracking-widest">Uploaded files</span>
         <div className="flex gap-2">
           {files.length > 0 && (
             <button
               onClick={onClear}
-              className="text-xs px-3 py-1 bg-[#1f2937] border border-[#374151] text-[#9ca3af] rounded-md hover:text-[#e5e7eb] transition-colors"
+              className="text-xs px-3 py-1 bg-bg-elevated border border-border text-text-secondary rounded-md hover:text-text-primary transition-colors"
             >
               Clear all
             </button>
           )}
           <button
             onClick={() => document.getElementById('file-input-resize')?.click()}
-            className="text-xs px-3 py-1 rounded-md border border-transparent text-[#111827] font-semibold"
+            className="text-xs px-3 py-1 rounded-md border border-transparent text-on-accent font-semibold"
             style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}
           >
             + Add
@@ -129,23 +129,17 @@ export function ResizePanel({
             onChange={e => onFiles(Array.from(e.target.files ?? []))}
           />
 
-          {files.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              {files.map(f => <FileItem key={f.id} entry={f} onRemove={onRemove} />)}
-            </div>
-          )}
-
           {firstFile && (
-            <div className="bg-[#1f2937] border border-[#374151] rounded-xl p-4 flex flex-col gap-4">
+            <div className="bg-bg-elevated border border-border rounded-xl p-4 flex flex-col gap-4">
               {/* Reference dims (only in dimensions mode when loaded) */}
               {resizeSettings.mode === 'dimensions' && originalDims && (
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-[#6b7280]">
+                  <p className="text-xs text-text-muted">
                     Reference:{' '}
-                    <span className="text-[#9ca3af] font-semibold">{originalDims.w} × {originalDims.h} px</span>
+                    <span className="text-text-secondary font-semibold">{originalDims.w} × {originalDims.h} px</span>
                   </p>
                   {files.length > 1 && (
-                    <span className="text-xs text-[#6b7280]">→ applied to {files.length} files</span>
+                    <span className="text-xs text-text-muted">→ applied to {files.length} files</span>
                   )}
                 </div>
               )}
@@ -157,8 +151,8 @@ export function ResizePanel({
                     key={m}
                     className={`flex-1 flex items-center justify-center py-1.5 rounded-md border cursor-pointer text-xs font-semibold transition-all ${
                       resizeSettings.mode === m
-                        ? 'border-[#f59e0b] bg-[#f59e0b]/15 text-[#f59e0b]'
-                        : 'border-[#374151] bg-transparent text-[#6b7280] hover:text-[#9ca3af]'
+                        ? 'border-accent bg-accent/15 text-accent'
+                        : 'border-border bg-transparent text-text-muted hover:text-text-secondary'
                     }`}
                   >
                     <input
@@ -178,7 +172,7 @@ export function ResizePanel({
               {resizeSettings.mode === 'dimensions' ? (
                 <div className="flex items-end gap-3">
                   <div className="flex flex-col gap-1 flex-1">
-                    <label className="text-xs text-[#9ca3af]">Width (px)</label>
+                    <label className="text-xs text-text-secondary">Width (px)</label>
                     <input
                       type="number"
                       min={1}
@@ -189,7 +183,7 @@ export function ResizePanel({
                         const n = parseInt(str, 10)
                         if (!isNaN(n) && n >= 1) handleWidthChange(n)
                       }}
-                      className="bg-[#111827] border border-[#374151] rounded-md px-3 py-1.5 text-sm text-[#e5e7eb] w-full"
+                      className="bg-bg-panel border border-border rounded-md px-3 py-1.5 text-sm text-text-primary w-full"
                     />
                   </div>
 
@@ -198,15 +192,15 @@ export function ResizePanel({
                     title={resizeSettings.lockAspect ? 'Unlock aspect ratio' : 'Lock aspect ratio'}
                     className={`mb-0.5 px-3 py-1.5 rounded-md border text-xs font-semibold transition-all ${
                       resizeSettings.lockAspect
-                        ? 'border-[#f59e0b] bg-[#f59e0b]/15 text-[#f59e0b]'
-                        : 'border-[#374151] bg-transparent text-[#6b7280] hover:text-[#9ca3af]'
+                        ? 'border-accent bg-accent/15 text-accent'
+                        : 'border-border bg-transparent text-text-muted hover:text-text-secondary'
                     }`}
                   >
                     {resizeSettings.lockAspect ? '= AR' : '/ AR'}
                   </button>
 
                   <div className="flex flex-col gap-1 flex-1">
-                    <label className="text-xs text-[#9ca3af]">Height (px)</label>
+                    <label className="text-xs text-text-secondary">Height (px)</label>
                     <input
                       type="number"
                       min={1}
@@ -217,7 +211,7 @@ export function ResizePanel({
                         const n = parseInt(str, 10)
                         if (!isNaN(n) && n >= 1) handleHeightChange(n)
                       }}
-                      className="bg-[#111827] border border-[#374151] rounded-md px-3 py-1.5 text-sm text-[#e5e7eb] w-full"
+                      className="bg-bg-panel border border-border rounded-md px-3 py-1.5 text-sm text-text-primary w-full"
                     />
                   </div>
                 </div>
@@ -233,8 +227,8 @@ export function ResizePanel({
                       onClick={() => onResizeSettingsChange({ ...resizeSettings, scaleFactor: factor })}
                       className={`flex-1 py-1.5 rounded-md border text-xs font-semibold transition-all ${
                         resizeSettings.scaleFactor === factor
-                          ? 'border-[#f59e0b] bg-[#f59e0b]/15 text-[#f59e0b]'
-                          : 'border-[#374151] bg-transparent text-[#6b7280] hover:text-[#9ca3af]'
+                          ? 'border-accent bg-accent/15 text-accent'
+                          : 'border-border bg-transparent text-text-muted hover:text-text-secondary'
                       }`}
                     >
                       {label}
@@ -244,15 +238,21 @@ export function ResizePanel({
               )}
             </div>
           )}
+
+          {files.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              {files.map(f => <FileItem key={f.id} entry={f} onRemove={onRemove} />)}
+            </div>
+          )}
         </div>
       )}
 
       {files.length > 0 && (
-        <div className="flex-shrink-0 p-4 border-t border-[#1f2937]">
+        <div className="flex-shrink-0 p-4 border-t border-border-subtle">
           <button
             onClick={onProcess}
             disabled={!canProcess}
-            className="w-full py-2.5 rounded-lg text-sm font-bold text-[#111827] disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:brightness-110 active:scale-[0.98]"
+            className="w-full py-2.5 rounded-lg text-sm font-bold text-on-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:brightness-110 active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}
           >
             {processing

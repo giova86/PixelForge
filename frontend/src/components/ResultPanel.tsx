@@ -27,28 +27,28 @@ export function ResultPanel({ files, mode }: ResultPanelProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="relative flex items-center px-5 h-14 bg-[#111827] border-b border-[#1f2937] flex-shrink-0">
-        <span className="text-xs font-semibold text-[#9ca3af] uppercase tracking-widest">Result</span>
+      <div className="relative flex items-center px-5 h-14 bg-bg-panel border-b border-border-subtle flex-shrink-0">
+        <span className="text-xs font-semibold text-text-secondary uppercase tracking-widest">Result</span>
         {activeEntry && (
-          <span className="absolute left-1/2 -translate-x-1/2 text-xs text-[#f59e0b] font-medium max-w-[40%] truncate">
+          <span className="absolute left-1/2 -translate-x-1/2 text-xs text-accent font-medium max-w-[40%] truncate">
             {activeEntry.file.name}
           </span>
         )}
         {done.length > 1 && (
           <div className="flex items-center gap-2 ml-auto">
-            <span className="text-xs text-[#6b7280]">{activeIndex + 1} / {done.length}</span>
+            <span className="text-xs text-text-muted">{activeIndex + 1} / {done.length}</span>
             <div className="flex gap-1">
               <button
                 onClick={goToPrev}
                 disabled={activeIndex <= 0}
-                className="w-7 h-7 flex items-center justify-center rounded-md border border-[#374151] text-[#9ca3af] hover:text-[#e5e7eb] hover:border-[#4b5563] disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm"
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-text-secondary hover:text-text-primary hover:border-text-faint disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm"
               >
                 ‹
               </button>
               <button
                 onClick={goToNext}
                 disabled={activeIndex >= done.length - 1}
-                className="w-7 h-7 flex items-center justify-center rounded-md border border-[#374151] text-[#9ca3af] hover:text-[#e5e7eb] hover:border-[#4b5563] disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm"
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-text-secondary hover:text-text-primary hover:border-text-faint disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm"
               >
                 ›
               </button>
@@ -59,7 +59,7 @@ export function ResultPanel({ files, mode }: ResultPanelProps) {
 
       <div className="flex-1 overflow-hidden p-4 flex flex-col">
         {!activeEntry && (
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-[#4b5563]">
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-text-faint">
             <span className="text-4xl opacity-30">✦</span>
             <p className="text-sm">Process an image to see the result</p>
           </div>

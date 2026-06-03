@@ -23,17 +23,17 @@ export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-5 h-14 bg-[#111827] border-b border-[#1f2937] flex-shrink-0">
-        <span className="text-xs font-semibold text-[#9ca3af] uppercase tracking-widest">Uploaded Files</span>
+      <div className="flex items-center justify-between px-5 h-14 bg-bg-panel border-b border-border-subtle flex-shrink-0">
+        <span className="text-xs font-semibold text-text-secondary uppercase tracking-widest">Uploaded Files</span>
         <div className="flex gap-2">
           {hasFiles && (
-            <button onClick={onClear} className="text-xs px-3 py-1 bg-[#1f2937] border border-[#374151] text-[#9ca3af] rounded-md hover:text-[#e5e7eb] transition-colors">
+            <button onClick={onClear} className="text-xs px-3 py-1 bg-bg-elevated border border-border text-text-secondary rounded-md hover:text-text-primary transition-colors">
               Clear all
             </button>
           )}
           <button
             onClick={() => document.getElementById('file-input-trigger')?.click()}
-            className="text-xs px-3 py-1 rounded-md border border-transparent text-[#111827] font-semibold"
+            className="text-xs px-3 py-1 rounded-md border border-transparent text-on-accent font-semibold"
             style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}
           >
             + Add
@@ -60,11 +60,11 @@ export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, 
       )}
 
       {hasFiles && (
-        <div className="flex-shrink-0 p-4 border-t border-[#1f2937]">
+        <div className="flex-shrink-0 p-4 border-t border-border-subtle">
           <button
             onClick={onProcess}
             disabled={(!hasPending && !settingsDirty) || processing}
-            className="w-full py-2.5 rounded-lg text-sm font-bold text-[#111827] disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:brightness-110 active:scale-[0.98]"
+            className="w-full py-2.5 rounded-lg text-sm font-bold text-on-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:brightness-110 active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}
           >
             {processing ? 'Processing…' : 'Process'}
