@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { API_BASE } from '../api'
 import type { FileEntry, JobResult, ResizeSettings } from '../types'
 
 interface ProcessingCallbacks {
@@ -31,7 +32,7 @@ export function useResizeProcessing(
 
         let jobId: string
         try {
-          const res = await fetch('/resize', { method: 'POST', body: form })
+          const res = await fetch(`${API_BASE}/resize`, { method: 'POST', body: form })
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
           const json = await res.json()
           jobId = json.job_id
@@ -41,7 +42,7 @@ export function useResizeProcessing(
           return
         }
 
-        const es = new EventSource(`/stream/${jobId}`)
+        const es = new EventSource(`${API_BASE}/stream/${jobId}`)
 
         es.addEventListener('progress', (e) => {
           const data = JSON.parse((e as MessageEvent).data)
@@ -53,7 +54,7 @@ export function useResizeProcessing(
           es.close()
           const result: JobResult = {
             mode: 'resize',
-            outputUrl: data.output_url,
+            outputUrl: `${API_BASE}${data.output_url}`,
             outputFormat: data.output_format,
             originalWidth: data.original_width,
             originalHeight: data.original_height,

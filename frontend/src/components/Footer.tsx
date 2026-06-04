@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_BASE } from '../api'
 import type { FileEntry } from '../types'
 
 interface FooterProps {
@@ -55,7 +56,7 @@ export function Footer({ files, batchId }: FooterProps) {
     } else {
       setDownloading(true)
       try {
-        const response = await fetch(`/download/batch/${batchId}`)
+        const response = await fetch(`${API_BASE}/download/batch/${batchId}`)
         const blob = await response.blob()
         const url = URL.createObjectURL(blob)
         triggerDirectDownload(url, `pixelforge_${batchId.slice(0, 8)}.zip`)

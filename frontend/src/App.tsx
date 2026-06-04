@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { API_BASE } from './api'
 import { Footer } from './components/Footer'
 import { Navbar } from './components/Navbar'
 import { ResizePanel } from './components/ResizePanel'
@@ -93,7 +94,7 @@ export default function App() {
   useEffect(() => {
     const check = async () => {
       try {
-        const r = await fetch('/health')
+        const r = await fetch(`${API_BASE}/health`)
         setBackendOnline(r.ok)
       } catch {
         setBackendOnline(false)

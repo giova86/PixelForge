@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { API_BASE } from '../api'
 import type { FileEntry, JobResult, ProcessingSettings } from '../types'
 
 interface ProcessingCallbacks {
@@ -31,7 +32,7 @@ export function useProcessing(
 
         let jobId: string
         try {
-          const res = await fetch('/process', { method: 'POST', body: form })
+          const res = await fetch(`${API_BASE}/process`, { method: 'POST', body: form })
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
           const json = await res.json()
           jobId = json.job_id
@@ -41,7 +42,7 @@ export function useProcessing(
           return
         }
 
-        const es = new EventSource(`/stream/${jobId}`)
+        const es = new EventSource(`${API_BASE}/stream/${jobId}`)
 
         es.addEventListener('progress', (e) => {
           const data = JSON.parse((e as MessageEvent).data)
@@ -53,7 +54,7 @@ export function useProcessing(
           es.close()
           const result: JobResult = {
             mode,
-            outputUrl: data.output_url,
+            outputUrl: `${API_BASE}${data.output_url}`,
             outputFormat: data.output_format,
             originalSize: data.original_size,
             compressedSize: data.compressed_size,
