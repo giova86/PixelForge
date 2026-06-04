@@ -19,10 +19,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# PyTorch CPU (much smaller than the default CUDA build)
+# torch 2.0.1 + torchvision 0.15.2 are the last versions that still ship
+# torchvision.transforms.functional_tensor, required by basicsr==1.4.2.
 RUN pip install --no-cache-dir \
-        torch==2.3.0+cpu \
-        torchvision==0.18.0+cpu \
+        torch==2.0.1+cpu \
+        torchvision==0.15.2+cpu \
         --index-url https://download.pytorch.org/whl/cpu
 
 COPY backend/requirements-prod.txt .
