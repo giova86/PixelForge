@@ -19,8 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# torch 2.0.1 + torchvision 0.15.2 are the last versions that still ship
-# torchvision.transforms.functional_tensor, required by basicsr==1.4.2.
+# numpy<2 must come first: torch 2.0.1 was compiled against numpy 1.x ABI
+# and basicsr 1.4.2 also requires functional_tensor (removed in torchvision 0.16+).
+RUN pip install --no-cache-dir "numpy<2"
 RUN pip install --no-cache-dir \
         torch==2.0.1+cpu \
         torchvision==0.15.2+cpu \
