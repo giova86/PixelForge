@@ -14,40 +14,51 @@ func augmentedEnvironment() -> [String: String] {
 // MARK: - Process management
 
 var backendProcess: Process?
-var frontendProcess: Process?
+var serverPort = 8000
 
-func projectRoot() -> String {
-    Bundle.main.infoDictionary?["PixelForgeProjectRoot"] as? String
-        ?? FileManager.default.currentDirectoryPath
+// Trova una porta TCP libera su localhost chiedendola al sistema.
+func findFreePort() -> Int {
+    let fd = socket(AF_INET, SOCK_STREAM, 0)
+    defer { close(fd) }
+    var addr = sockaddr_in()
+    addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+    addr.sin_family = sa_family_t(AF_INET)
+    addr.sin_port = 0
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+    var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+    let bound = withUnsafeMutablePointer(to: &addr) {
+        $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, len) }
+    }
+    guard bound == 0 else { return 8000 }
+    _ = withUnsafeMutablePointer(to: &addr) {
+        $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(fd, $0, &len) }
+    }
+    return Int(UInt16(bigEndian: addr.sin_port))
 }
 
-func spawnBackend() {
-    let root = projectRoot()
+// Python, backend e frontend compilato sono dentro il bundle (Contents/Resources).
+func spawnBackend() -> Bool {
+    let res = Bundle.main.resourcePath ?? ""
+    let python = res + "/python/bin/python3"
+    guard FileManager.default.isExecutableFile(atPath: python) else { return false }
+
+    serverPort = findFreePort()
     let p = Process()
-    p.executableURL = URL(fileURLWithPath: root + "/.venv/bin/python")
-    p.arguments = ["-m", "uvicorn", "main:app", "--port", "8000", "--log-level", "warning"]
-    p.currentDirectoryURL = URL(fileURLWithPath: root + "/backend")
-    p.environment = augmentedEnvironment()
-    try? p.run()
+    p.executableURL = URL(fileURLWithPath: python)
+    p.arguments = ["-m", "uvicorn", "main:app", "--host", "127.0.0.1",
+                   "--port", String(serverPort), "--log-level", "warning"]
+    p.currentDirectoryURL = URL(fileURLWithPath: res + "/backend")
+    var env = ProcessInfo.processInfo.environment
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONNOUSERSITE"] = "1"
+    p.environment = env
+    do { try p.run() } catch { return false }
     backendProcess = p
-}
-
-func spawnFrontend() {
-    let root = projectRoot()
-
-    // npm è uno script Node.js: eseguito via /bin/sh per ereditare PATH corretto
-    let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/bin/sh")
-    p.arguments = ["-c", "npm run dev"]
-    p.currentDirectoryURL = URL(fileURLWithPath: root + "/frontend")
-    p.environment = augmentedEnvironment()
-    try? p.run()
-    frontendProcess = p
+    return true
 }
 
 func terminateAll() {
     backendProcess?.terminate()
-    frontendProcess?.terminate()
 }
 
 // MARK: - Loading view controller
@@ -99,11 +110,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDe
     var loadingVC: LoadingViewController!
     var pollTimer: Timer?
     var pollAttempts = 0
-    let maxAttempts = 120  // 60 secondi (500ms × 120) — Vite può essere lento al primo avvio
+    let maxAttempts = 120  // 60 secondi (500ms × 120) — il primo avvio di PyTorch può essere lento
+    var appURL: URL { URL(string: "http://127.0.0.1:\(serverPort)")! }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        spawnBackend()
-        spawnFrontend()
+        let started = spawnBackend()
 
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1280, height: 800),
@@ -122,32 +133,32 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDe
         }
         window.makeKeyAndOrderFront(nil)
 
-        // Attende che ENTRAMBI i server siano pronti prima di caricare la UI
+        guard started else {
+            showError("Componenti interni mancanti: reinstalla PixelForge.")
+            return
+        }
+        // Attende che il backend sia pronto prima di caricare la UI
         pollTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            self?.pollBothServers()
+            self?.pollServer()
         }
     }
 
-    func pollBothServers() {
+    func pollServer() {
         pollAttempts += 1
         if pollAttempts > maxAttempts {
             pollTimer?.invalidate()
-            showError("I server non hanno risposto in 60 secondi.\nVerifica che setup.sh sia stato eseguito.")
+            showError("Il motore di PixelForge non ha risposto in 60 secondi.")
             return
         }
-
-        checkPort(8000) { [weak self] backendOk in
-            guard let self, backendOk else { return }
-            self.checkPort(5173) { frontendOk in
-                guard frontendOk else { return }
-                self.pollTimer?.invalidate()
-                DispatchQueue.main.async { self.loadUI() }
-            }
+        checkPort(serverPort) { [weak self] ok in
+            guard let self, ok else { return }
+            self.pollTimer?.invalidate()
+            DispatchQueue.main.async { self.loadUI() }
         }
     }
 
     func checkPort(_ port: Int, completion: @escaping (Bool) -> Void) {
-        let url = URL(string: "http://localhost:\(port)")!
+        let url = URL(string: "http://127.0.0.1:\(port)")!
         var req = URLRequest(url: url, timeoutInterval: 0.4)
         req.httpMethod = "HEAD"
         URLSession.shared.dataTask(with: req) { _, response, _ in
@@ -162,7 +173,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDe
         webView.autoresizingMask = [.width, .height]
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        webView.load(URLRequest(url: URL(string: "http://localhost:5173")!))
+        webView.load(URLRequest(url: self.appURL))
         window.contentView = webView
     }
 
@@ -181,7 +192,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDe
     // Retry automatico se la navigazione fallisce (safety net)
     func webView(_ webView: WKWebView, didFailProvisionalNavigation _: WKNavigation!, withError _: Error) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            webView.load(URLRequest(url: URL(string: "http://localhost:5173")!))
+            webView.load(URLRequest(url: self.appURL))
         }
     }
 
@@ -200,7 +211,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDe
             decisionHandler(.download)
         } else if action.navigationType == .linkActivated,
                   let url = action.request.url,
-                  url.host != "localhost" {
+                  url.host != "127.0.0.1" {
             NSWorkspace.shared.open(url)
             decisionHandler(.cancel)
         } else {

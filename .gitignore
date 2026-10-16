@@ -11,3 +11,5 @@ node_modules/
 frontend/dist/
 backend/.pytest_cache/
 docs/superpowers/
+mac-app/build/
+PixelForge.dmg

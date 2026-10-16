@@ -108,6 +108,39 @@ Open http://localhost:5173 in your browser. Press `Ctrl+C` to stop everything.
 
 ---
 
+## macOS app
+
+PixelForge can be packaged as a standalone native Mac app (`PixelForge.app`). It opens in its own window, with native file pickers and "Save as" dialogs. Python, PyTorch, the backend, the compiled frontend and the model weights are all bundled inside, so the people who use it need nothing installed: no Python, no Node, no project folder.
+
+### Build it
+
+After running `./setup.sh` once (the build copies the packages from `.venv/` and the weights from `backend/weights/`):
+
+```bash
+./mac-app/build.sh          # creates PixelForge.app
+./mac-app/build.sh --dmg    # also creates PixelForge.dmg (drag-to-Applications installer)
+```
+
+Build requirements: Apple Silicon Mac, Xcode Command Line Tools (`swiftc`), Node.js, and [uv](https://docs.astral.sh/uv/) (`brew install uv`, used to fetch a relocatable Python 3.13). The script compiles the Swift launcher, builds the frontend, bundles everything and ad-hoc signs the result.
+
+The app is ~1.1 GB (`.dmg` ~580 MB), almost all of it PyTorch.
+
+### Install on another Mac
+
+Open `PixelForge.dmg` and drag PixelForge to Applications. The app is **not notarized** (no Apple Developer account), so on the first launch macOS shows an "unverified developer" warning: right-click the app → **Open** → **Open**. This is needed only once.
+
+**Apple Silicon (M1 or later) only.** There is no Intel build.
+
+### How it works
+
+On launch, the Swift launcher ([mac-app/PixelForge.swift](mac-app/PixelForge.swift)) starts the bundled FastAPI backend on a free local port, waits for it to respond, then loads the UI in a `WKWebView`. The backend serves the compiled frontend itself, so a single process is enough. The backend stops when the app quits.
+
+### App icon
+
+[mac-app/AppIcon.icns](mac-app/AppIcon.icns) is picked up automatically by the build. To change the design, edit and re-run [mac-app/make-icon.py](mac-app/make-icon.py) (needs Pillow, e.g. `.venv/bin/python mac-app/make-icon.py`), or just replace the `.icns` file with your own.
+
+---
+
 ## Running tests
 
 ```bash
@@ -161,6 +194,11 @@ pixelforge/
 │   │   └── types/
 │   ├── package.json
 │   └── vite.config.ts
+├── mac-app/
+│   ├── PixelForge.swift      # native macOS launcher (window + backend process)
+│   ├── build.sh              # builds PixelForge.app / PixelForge.dmg
+│   ├── make-icon.py          # generates AppIcon.icns
+│   └── AppIcon.icns
 ├── setup.sh                  # one-shot installer
 └── start.sh                  # dev server launcher
 ```
