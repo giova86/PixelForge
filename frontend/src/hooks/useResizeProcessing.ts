@@ -16,8 +16,11 @@ export function useResizeProcessing(
     entries: FileEntry[],
     settings: ResizeSettings,
     batchId: string,
+    signal: AbortSignal, // segnale di annullamento: interrompe la coda
   ) => {
     for (const entry of entries) {
+      // Annullato: non inviare i file rimanenti
+      if (signal.aborted) break
       await new Promise<void>(async (resolve) => {
         const form = new FormData()
         form.append('file', entry.file)
@@ -32,17 +35,24 @@ export function useResizeProcessing(
 
         let jobId: string
         try {
-          const res = await fetch(`${API_BASE}/resize`, { method: 'POST', body: form })
+          const res = await fetch(`${API_BASE}/resize`, { method: 'POST', body: form, signal })
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
           const json = await res.json()
           jobId = json.job_id
         } catch {
-          callbacks.current.onError(entry.id, 'Failed to start job')
+          // Se l'errore deriva dall'annullamento non è un errore da mostrare
+          if (!signal.aborted) callbacks.current.onError(entry.id, 'Failed to start job')
           resolve()
           return
         }
 
+        // Annullato mentre il POST era in corso: non aprire lo stream
+        if (signal.aborted) { resolve(); return }
+
         const es = new EventSource(`${API_BASE}/stream/${jobId}`)
+
+        // All'annullamento chiude lo stream e sblocca il ciclo
+        signal.addEventListener('abort', () => { es.close(); resolve() }, { once: true })
 
         es.addEventListener('progress', (e) => {
           const data = JSON.parse((e as MessageEvent).data)

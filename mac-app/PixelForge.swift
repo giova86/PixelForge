@@ -265,7 +265,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDe
         panel.nameFieldStringValue = suggestedFilename
         panel.canCreateDirectories = true
         panel.begin { result in
-            completionHandler(result == .OK ? panel.url : nil)
+            guard result == .OK, let url = panel.url else {
+                completionHandler(nil)
+                return
+            }
+            // NSSavePanel ha già chiesto conferma di sovrascrittura all'utente, ma
+            // WKDownload fallisce se la destinazione esiste: rimuoviamo il file esistente.
+            if FileManager.default.fileExists(atPath: url.path) {
+                try? FileManager.default.removeItem(at: url)
+            }
+            completionHandler(url)
         }
     }
 

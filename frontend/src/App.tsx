@@ -109,14 +109,32 @@ export default function App() {
     resizeQueue.addFiles(incoming)
   }, [resizeQueue.addFiles])
 
+  // Un AbortController per modalità: le code possono girare in parallelo
+  const abortControllers = useRef<Partial<Record<ProcessingMode, AbortController>>>({})
+
+  const revertCompress = compressQueue.revertProcessing
+  const revertEnhance = enhanceQueue.revertProcessing
+  const revertResize = resizeQueue.revertProcessing
+
+  // Annulla l'elaborazione della modalità attiva: ferma la coda e
+  // rimette in attesa i file che erano in corso (i completati restano)
+  const handleCancel = useCallback(() => {
+    abortControllers.current[mode]?.abort()
+    const revert = mode === 'compress' ? revertCompress : mode === 'enhance' ? revertEnhance : revertResize
+    revert()
+  }, [mode, revertCompress, revertEnhance, revertResize])
+
   const handleProcess = useCallback(async () => {
     const newBatchId = crypto.randomUUID()
+    // Nuovo controller per questa esecuzione
+    const controller = new AbortController()
+    abortControllers.current[mode] = controller
     if (mode === 'compress') {
       setCompressBatchId(newBatchId)
       setCompressProcessing(true)
       const toProcess = compressQueue.resetAll()
       try {
-        await compressProcessQueue(toProcess, mode, settings, newBatchId)
+        await compressProcessQueue(toProcess, mode, settings, newBatchId, controller.signal)
       } finally {
         setSettingsDirty(false)
         setCompressProcessing(false)
@@ -126,7 +144,7 @@ export default function App() {
       setEnhanceProcessing(true)
       const toProcess = enhanceQueue.resetAll()
       try {
-        await enhanceProcessQueue(toProcess, mode, settings, newBatchId)
+        await enhanceProcessQueue(toProcess, mode, settings, newBatchId, controller.signal)
       } finally {
         setSettingsDirty(false)
         setEnhanceProcessing(false)
@@ -136,7 +154,7 @@ export default function App() {
       setResizeProcessing(true)
       const toProcess = resizeQueue.resetAll()
       try {
-        await processResize(toProcess, resizeSettings, newBatchId)
+        await processResize(toProcess, resizeSettings, newBatchId, controller.signal)
       } finally {
         setResizeProcessing(false)
       }
@@ -155,6 +173,7 @@ export default function App() {
               onFiles={handleResizeFile}
               onResizeSettingsChange={setResizeSettings}
               onProcess={handleProcess}
+              onCancel={handleCancel}
               onClear={resizeQueue.clearAll}
               onRemove={resizeQueue.removeFile}
               processing={resizeProcessing}
@@ -168,6 +187,7 @@ export default function App() {
               onFiles={activeQueue.addFiles}
               onSettingsChange={handleSettingsChange}
               onProcess={handleProcess}
+              onCancel={handleCancel}
               onClear={activeQueue.clearAll}
               onRemove={activeQueue.removeFile}
               processing={activeProcessing}
