@@ -76,11 +76,17 @@ export function useFileQueue() {
     setFiles(prev => { prev.forEach(f => URL.revokeObjectURL(f.previewUrl)); return [] })
   }, [])
 
+  // Dopo un annullamento: i file in elaborazione tornano in coda ("pending"),
+  // quelli già completati o in errore restano invariati
+  const revertProcessing = useCallback(() => {
+    setFiles(prev => prev.map(f => f.status === 'processing' ? { ...f, status: 'pending' as FileStatus } : f))
+  }, [])
+
   const resetAll = useCallback((): FileEntry[] => {
     const reset = files.map(f => ({ ...f, status: 'pending' as FileStatus, result: undefined, errorMessage: undefined }))
     setFiles(reset)
     return reset
   }, [files])
 
-  return { files, isAdding, addFiles, updateStatus, setResult, setError, removeFile, clearAll, resetAll }
+  return { files, isAdding, addFiles, updateStatus, setResult, setError, removeFile, clearAll, resetAll, revertProcessing }
 }

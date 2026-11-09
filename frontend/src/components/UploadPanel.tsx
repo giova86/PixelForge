@@ -10,6 +10,7 @@ interface UploadPanelProps {
   onFiles: (files: File[]) => void
   onSettingsChange: (s: ProcessingSettings) => void
   onProcess: () => void
+  onCancel: () => void
   onClear: () => void
   onRemove: (id: string) => void
   processing: boolean
@@ -17,7 +18,7 @@ interface UploadPanelProps {
   isAdding?: boolean
 }
 
-export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, onProcess, onClear, onRemove, processing, settingsDirty, isAdding = false }: UploadPanelProps) {
+export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, onProcess, onCancel, onClear, onRemove, processing, settingsDirty, isAdding = false }: UploadPanelProps) {
   const hasFiles = files.length > 0
   const hasPending = files.some(f => f.status === 'pending')
 
@@ -60,7 +61,7 @@ export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, 
       )}
 
       {hasFiles && (
-        <div className="flex-shrink-0 p-4 border-t border-border-subtle">
+        <div className="flex-shrink-0 p-4 border-t border-border-subtle flex gap-2">
           <button
             onClick={onProcess}
             disabled={(!hasPending && !settingsDirty) || processing}
@@ -69,6 +70,15 @@ export function UploadPanel({ files, mode, settings, onFiles, onSettingsChange, 
           >
             {processing ? 'Processing…' : 'Process'}
           </button>
+          {/* Visibile solo durante l'elaborazione: interrompe la coda */}
+          {processing && (
+            <button
+              onClick={onCancel}
+              className="px-5 py-2.5 rounded-lg text-sm font-bold bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Cancel
+            </button>
+          )}
         </div>
       )}
     </div>

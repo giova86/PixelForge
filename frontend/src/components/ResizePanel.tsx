@@ -9,6 +9,7 @@ interface ResizePanelProps {
   onFiles: (files: File[]) => void
   onResizeSettingsChange: (s: ResizeSettings) => void
   onProcess: () => void
+  onCancel: () => void
   onClear: () => void
   onRemove: (id: string) => void
   processing: boolean
@@ -16,7 +17,7 @@ interface ResizePanelProps {
 }
 
 export function ResizePanel({
-  files, resizeSettings, onFiles, onResizeSettingsChange, onProcess, onClear, onRemove, processing, isAdding = false,
+  files, resizeSettings, onFiles, onResizeSettingsChange, onProcess, onCancel, onClear, onRemove, processing, isAdding = false,
 }: ResizePanelProps) {
   const firstFile = files[0] ?? null
   const [originalDims, setOriginalDims] = useState<{ w: number; h: number } | null>(null)
@@ -248,7 +249,7 @@ export function ResizePanel({
       )}
 
       {files.length > 0 && (
-        <div className="flex-shrink-0 p-4 border-t border-border-subtle">
+        <div className="flex-shrink-0 p-4 border-t border-border-subtle flex gap-2">
           <button
             onClick={onProcess}
             disabled={!canProcess}
@@ -261,6 +262,15 @@ export function ResizePanel({
                 ? `Resize ${files.length} images`
                 : 'Resize'}
           </button>
+          {/* Visibile solo durante l'elaborazione: interrompe la coda */}
+          {processing && (
+            <button
+              onClick={onCancel}
+              className="px-5 py-2.5 rounded-lg text-sm font-bold bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Cancel
+            </button>
+          )}
         </div>
       )}
     </div>
