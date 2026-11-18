@@ -1,134 +1,98 @@
 import io
-import os
-import struct
+import logging
 import subprocess
-import tempfile
+import sys
+import sysconfig
 from functools import lru_cache
+from pathlib import Path
+
+import mozjpeg_lossless_optimization as mozjpeg
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 _MIME_MAP = {"jpeg": "image/jpeg", "webp": "image/webp", "png": "image/png"}
 _EXT_MAP = {"jpeg": ".jpg", "webp": ".webp", "png": ".png"}
 
-_CJPEG_CANDIDATES = [
-    "/opt/homebrew/opt/mozjpeg/bin/cjpeg",
-    "/usr/local/opt/mozjpeg/bin/cjpeg",
-    "/usr/bin/cjpeg",
-    "cjpeg",
-]
-_PNGQUANT_CANDIDATES = [
-    "/opt/homebrew/bin/pngquant",
-    "/usr/local/bin/pngquant",
-    "/usr/bin/pngquant",
-    "pngquant",
-]
-
 
 @lru_cache(maxsize=1)
-def _find_cjpeg() -> str | None:
-    for path in _CJPEG_CANDIDATES:
-        try:
-            r = subprocess.run([path, "-version"], capture_output=True, timeout=3)
-            if r.returncode == 0:
-                return path
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            pass
+def find_pngquant() -> Path | None:
+    """Locate the pngquant binary shipped by the ``pngquant-cli`` wheel.
+
+    The wheel installs the executable next to the interpreter's scripts, so
+    only the Python environment is searched: nothing installed system-wide
+    (Homebrew, apt, ...) is ever used, keeping results identical everywhere.
+    """
+    exe = "pngquant.exe" if sys.platform == "win32" else "pngquant"
+    # Scripts dir of the active environment + dir of the interpreter (venv/bin)
+    for directory in (sysconfig.get_path("scripts"), Path(sys.executable).parent):
+        candidate = Path(directory) / exe
+        if candidate.is_file():
+            return candidate
+    # No wheel exists for some platforms (e.g. Linux aarch64): surface it once
+    logger.warning(
+        "pngquant not found in the Python environment: PNG falls back to lossless compression"
+    )
     return None
 
 
-@lru_cache(maxsize=1)
-def _find_pngquant() -> str | None:
-    for path in _PNGQUANT_CANDIDATES:
-        try:
-            r = subprocess.run([path, "--version"], capture_output=True, timeout=3)
-            if r.returncode == 0:
-                return path
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            pass
-    return None
-
-
-def _inject_exif(jpeg: bytes, exif: bytes) -> bytes:
-    if not exif:
-        return jpeg
-    length = struct.pack(">H", len(exif) + 2)
-    app1 = b"\xff\xe1" + length + exif
-    return jpeg[:2] + app1 + jpeg[2:]
-
-
-def _encode_jpeg_mozjpeg(img: Image.Image, quality: int, exif: bytes) -> bytes | None:
-    cjpeg = _find_cjpeg()
-    if cjpeg is None:
-        return None
-    ppm = io.BytesIO()
-    img.convert("RGB").save(ppm, format="PPM")
-    try:
-        result = subprocess.run(
-            [cjpeg, "-quality", str(quality), "-progressive", "-sample", "2x2"],
-            input=ppm.getvalue(), capture_output=True, check=True, timeout=60,
-        )
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return None
-    jpeg = result.stdout
+def _encode_jpeg(img: Image.Image, quality: int, exif: bytes) -> bytes:
+    # Step 1: lossy encode with Pillow's bundled libjpeg-turbo (4:2:0 subsampling)
+    buf = io.BytesIO()
+    save_kwargs: dict = {"format": "JPEG", "quality": quality, "subsampling": 2}
     if exif:
-        jpeg = _inject_exif(jpeg, exif)
-    return jpeg
+        save_kwargs["exif"] = exif
+    img.save(buf, **save_kwargs)
+    jpeg = buf.getvalue()
+    # Step 2: lossless repack with the bundled mozjpeg (progressive scans,
+    # optimised Huffman tables). Markers (EXIF) written above are preserved.
+    try:
+        return mozjpeg.optimize(jpeg, copy=mozjpeg.COPY_MARKERS.ALL)
+    except ValueError:
+        # mozjpeg rejected the stream: the plain Pillow encode is still valid
+        return jpeg
 
 
 def _compress_png_pngquant(img: Image.Image, quality: int) -> bytes | None:
-    pngquant = _find_pngquant()
+    pngquant = find_pngquant()
     if pngquant is None:
         return None
 
-    # Write input PNG to temp file
-    tmp_in = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+    png = io.BytesIO()
+    img.save(png, format="PNG")
+
+    # Map quality slider (1-100) to pngquant min-max range
+    min_q = max(0, quality - 20)
+    max_q = quality
+
     try:
-        img.save(tmp_in, format="PNG")
-        tmp_in.close()
-
-        # pngquant names the output <name>-fs8.png by default
-        tmp_out = tmp_in.name.replace(".png", "-fs8.png")
-
-        # Map quality slider (1-100) to pngquant min-max range
-        min_q = max(0, quality - 20)
-        max_q = quality
-
+        # "-" = read the PNG from stdin and write the result to stdout
         r = subprocess.run(
-            [pngquant, f"--quality={min_q}-{max_q}", "--speed=1",
-             "--output", tmp_out, "--force", tmp_in.name],
-            capture_output=True, timeout=60,
+            [str(pngquant), f"--quality={min_q}-{max_q}", "--speed=1", "-"],
+            input=png.getvalue(),
+            capture_output=True,
+            timeout=60,
+            check=False,
         )
-        # exit 99 means quality target unreachable (image already optimal)
-        if r.returncode not in (0, 99):
-            return None
-        if not os.path.exists(tmp_out):
-            return None
-        with open(tmp_out, "rb") as f:
-            return f.read()
-    except (subprocess.TimeoutExpired, OSError):
+    except subprocess.TimeoutExpired:
         return None
-    finally:
-        os.unlink(tmp_in.name)
-        if os.path.exists(tmp_out := tmp_in.name.replace(".png", "-fs8.png")):
-            os.unlink(tmp_out)
+    # Non-zero exit (e.g. 99 = quality target unreachable, image already
+    # optimal) or empty output: caller falls back to lossless compression
+    if r.returncode != 0 or not r.stdout:
+        return None
+    return r.stdout
 
 
-def compress_image(data: bytes, quality: int, output_format: str, keep_exif: bool) -> bytes:
+def compress_image(
+    data: bytes, quality: int, output_format: str, keep_exif: bool
+) -> bytes:
     img = Image.open(io.BytesIO(data))
     exif = img.info.get("exif", b"") if keep_exif else b""
 
     if output_format == "jpeg":
         if img.mode in ("RGBA", "P", "LA"):
             img = img.convert("RGB")
-        encoded = _encode_jpeg_mozjpeg(img, quality, exif)
-        if encoded is not None:
-            return encoded
-        buf = io.BytesIO()
-        save_kwargs: dict = {"format": "JPEG", "quality": quality,
-                             "optimize": True, "subsampling": 2, "progressive": True}
-        if exif:
-            save_kwargs["exif"] = exif
-        img.save(buf, **save_kwargs)
-        return buf.getvalue()
+        return _encode_jpeg(img, quality, exif)
 
     if output_format == "webp":
         buf = io.BytesIO()
@@ -139,7 +103,7 @@ def compress_image(data: bytes, quality: int, output_format: str, keep_exif: boo
         return buf.getvalue()
 
     if output_format == "png":
-        # pngquant (lossy palette quantization) — dramatically better for flat-color images
+        # pngquant (bundled, lossy palette quantization) — dramatically better for flat-color images
         quantized = _compress_png_pngquant(img, quality)
         if quantized is not None and len(quantized) < len(data):
             return quantized

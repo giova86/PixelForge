@@ -26,6 +26,8 @@ for w in RealESRGAN_x2plus.pth RealESRGAN_x4plus.pth; do
     [ -f "$ROOT/backend/weights/$w" ] || { echo "ERRORE: manca backend/weights/$w (esegui ./setup.sh)"; exit 1; }
 done
 
+[ -x "$VENV/bin/pngquant" ] || { echo "ERRORE: manca .venv/bin/pngquant (pip install pngquant-cli, o ./setup.sh)"; exit 1; }
+
 mkdir -p "$BUILD"
 
 # ── Swift ────────────────────────────────────────────────────────────────────
@@ -57,6 +59,12 @@ rm -f "$RES/python/EXTERNALLY-MANAGED" "$RES/python/lib/python$PYVER/EXTERNALLY-
 SP_SRC="$(echo "$VENV"/lib/python*/site-packages)"
 SP_DST="$RES/python/lib/python$PYVER/site-packages"
 ditto "$SP_SRC" "$SP_DST"
+
+# pngquant-cli non è un modulo Python: installa un eseguibile in .venv/bin, che
+# NON sta in site-packages. Va copiato accanto al python del bundle, dove
+# compress.find_pngquant() lo cerca (scripts dir dell'interprete).
+cp "$VENV/bin/pngquant" "$RES/python/bin/pngquant"
+chmod +x "$RES/python/bin/pngquant"
 
 step "Pulizia file inutili"
 find "$RES/python" -name "__pycache__" -type d -prune -exec rm -rf {} +
